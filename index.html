@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Server Timing</title>
+  <meta charset='utf-8'>
+  <script src='//www.w3.org/Tools/respec/respec-w3c-common' async class='remove'></script>
+  <script class='remove'>
+  var respecConfig = {
+    shortName: "server-timing",
+    specStatus: "ED",
+    edDraftURI: "http://w3c.github.io/server-timing/",
+    editors: [{
+      name: "Ilya Grigorik",
+      url: "https://www.igvita.com/",
+      mailto: "igrigorik@gmail.com",
+      company: "Google",
+      companyURL: "https://google.com/"
+    }, ],
+    wg: "Web Performance Working Group",
+    wgURI: "http://www.w3.org/2010/webperf/",
+    wgPublicList: "public-web-perf",
+    format: "markdown",
+    noLegacyStyle: true,
+    otherLinks: [{
+      key: 'Repository',
+      data: [{
+        value: 'We are on Github.',
+        href: 'https://github.com/w3c/server-timing/'
+      }, {
+        value: 'File a bug.',
+        href: 'https://github.com/w3c/server-timing/issues'
+      }, {
+        value: 'Commit history.',
+        href: 'https://github.com/w3c/server-timing/commits/gh-pages/index.html'
+      }]
+    }]
+  };
+  </script>
+</head>
+
+<body>
+  <section id='abstract'>
+    <p>This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request, and an interface to allow JavaScript mechanisms to collect and process server-sent performance metrics for the document and its resources.</p>
+  </section>
+
+  <section id='sotd'>
+    <p></p>
+  </section>
+
+  <section>
+    <h2>Introduction</h2>
+
+    <p>Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[!NavigationTiming]] and [[!ResourceTiming]] interfaces provide detailed timing information for the document and its resources, which includes time when the request was initiated, and time when first and last response byte were received. However, while the server processing time can be a significant fraction of the total request time, the user agent does not know where or how the time is spent on the server.</p>
+
+    <p>This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request, and an interface to allow JavaScript mechanisms to collect and process server-sent performance metrics for the document and its resources.</p>
+  </section>
+
+  <section>
+    <h2>Server Timing</h2>
+    <p><dfn>Server Timing</dfn> constitutes of two parts: a definition of the `Server-Timing` HTTP response header, which allows the server to communicate custom performance metrics in a well defined format, and a `ServerEntry` interface <!--that extends the [[!Navigation Timing]] and [[!Resource Timing]]--> and defines how the `Server-Timing` HTTP response header is parsed to create associated metrics in the performance timeline.</p>
+
+    <section>
+      <h2>The `Server-Timing` HTTP response header</h2>
+
+      <p>The `Server-Timing` response header field describes the server metrics associated with processing of the request. The server is NOT required to provide server metrics and is in full control which metrics are returned, when, and to whom - e.g. the server may provide detailed metrics to correctly authenticed users only, it may provide a different set of metrics to others, or nothing at all.</p>
+
+      <p>The `Server-Timing` field-value is a comma-delimited list of metric header fields, with a mandatory metric `name` and optional `duration` and `description` values for each. For example, the following response header communicates four metrics:</p>
+
+      <pre>Server-Timing: db=53, app=47;customView, dc;atl</pre>
+
+      <table class="parameters">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Value</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>db</td><td>53</td><td></td></tr>
+          <tr><td>app</td><td>47</td><td>customView</td></tr>
+          <tr><td>dc</td><td></td><td>atl</td></tr>
+        </tbody>
+      </table>
+
+      <p>Above metrics may indicate that the database ("db") time to query the database was 53 ms, the application server ("app") took 47 ms to process the data (via "customView" template or function), and that the request was routed through the "atl" datacenter ("dc").</p>
+
+      <div class="note">
+        To minimize the HTTP overhead, the provided metric names and descriptions should be kept short (e.g. use abbreviations). Similarly, optional values such as duration and descriptions should be omitted when not absolutely necessary.
+      </div>
+    </section>
+
+    <section>
+      <h2>The `ServerEntry` interface</h2>
+      <dl title='interface ServerEntry' class='idl'>
+        <dt>readonly attribute DOMString name</dt>
+        <dd>
+          This attribute MUST return the server-specified identifier for this ServerEntry object. This identifier does not have to be unique.
+        </dd>
+        <dt>readonly attribute DOMString description</dt>
+        <dd>
+          This attribute MUST return the server-specified annotation for this ServerEntry object.
+        </dd>
+        <dt>readonly attribute DOMHighResTimeStamp duration</dt>
+        <dd>
+          This attribute MUST return a DOMHighResTimeStamp that contains the server-specified duration time value for this ServerEntry object.
+        </dd>
+      </dl>
+    </section>
+  </section>
+
+  <section>
+    <h2>Processing model</h2>
+    <section>
+      <h2>TBD</h2>
+      <p>...</p>
+    </section>
+  </section>
+
+  <section>
+    <h2>Use cases</h2>
+
+    <section>
+      <h2>Server timing in developer tools</h2>
+      <p>Server processing time can be a significant fraction of the total request time. For example, a dynamic response may require one or more database queries, cache lookups, API calls, time to process relevant data and render the response, and so on. Similarly, even a static response can be delayed due to overloaded servers, slow caches, or other reasons.</p>
+
+      <p>Today, the user agent developer tools are able to show when the request was initiated, and when the first and last bytes of the response were received. However, there is no visibility into where or how the time was spent on the server, which means that the developer is unable to quickly diagnose if there is a performance bottleneck on the server, and if so, in which component. Today, to answer this question, the developer is required to use different techniques: check the server logs, embed performance data within the response (if possible), use external tools, and so on. This makes identifying and diagnosing performance bottlenecks hard, and in many cases impractical.</p>
+
+      <p>Server Timing defines a standard mechanism that enables the server to communicate relevant performance metrics to the client and allows the client to surface them directly in the developer tools - e.g. the requests can be annotated with server sent metrics to provide insight into where or how the time was spent while generating the response.</p>
+    </section>
+
+    <section>
+      <h2>Server timing for automated analytics</h2>
+      <p>In addition to surfacing server sent performance metrics in the developer tools, a standard JavaScript interface enables analytics tools to automatically collect, process, beacon, and aggregate these metrics for operational and performance analysis.</p>
+    </section>
+
+    <section>
+      <h2>Measuring request routing performance</h2>
+      <p>Server Timing enables origin servers to communicate performance metrics about where or how time is spent while processing the request. However, the same request and response may also be routed through one or more multiple proxies (e.g. cache servers, load balancers, and so on), each of which may introduce own delays and may want to provide performance metrics into where or how the time is spent.</p>
+
+      <p>For example, a CDN edge node may want to report which data center was being used, if the resource was available in cache, and how long it took to retrieve the response from cache or from the origin server. Further, the same process may be repeated by other proxies, thus allowing full end-to-end visibility into how the request was routed and where the time was spent.</p>
+
+      <p>Similarly, when a Service Worker is active, some or all of the navigation and resource requests may be routed through it. Effectively, an active Service Worker is a local proxy that is able to reroute requests, serve cached responses, synthesize responses, and more. As a result, Server Timing enables Service Worker to report custom performance metrics about how the request was processed: whether it was fetched from server or server from local cache, duration of relevant the processing steps, and so on.</p>
+    </section>
+  </section>
+
+
+  <section class="appendix">
+    <h2>Acknowledgments</h2>
+    <p>...</p>
+  </section>
+
+</body>
+</html>
