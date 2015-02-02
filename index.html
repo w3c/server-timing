@@ -21,7 +21,6 @@
     wgURI: "http://www.w3.org/2010/webperf/",
     wgPublicList: "public-web-perf",
     format: "markdown",
-    noLegacyStyle: true,
     otherLinks: [{
       key: 'Repository',
       data: [{
@@ -41,7 +40,7 @@
 
 <body>
   <section id='abstract'>
-    <p>This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request, and an interface to allow JavaScript mechanisms to collect and process server-sent performance metrics for the document and its resources.</p>
+    <p>This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.</p>
   </section>
 
   <section id='sotd'>
@@ -51,23 +50,125 @@
   <section>
     <h2>Introduction</h2>
 
-    <p>Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[!NavigationTiming]] and [[!ResourceTiming]] interfaces provide detailed timing information for the document and its resources, which includes time when the request was initiated, and time when first and last response byte were received. However, while the server processing time can be a significant fraction of the total request time, the user agent does not know where or how the time is spent on the server.</p>
+    <p>Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING]] and [[RESOURCE-TIMING]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g. how the request was routed, where the time was spent on the server, and so on.</p>
 
-    <p>This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request, and an interface to allow JavaScript mechanisms to collect and process server-sent performance metrics for the document and its resources.</p>
+    <p>This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.</p>
   </section>
 
   <section>
     <h2>Server Timing</h2>
-    <p><dfn>Server Timing</dfn> constitutes of two parts: a definition of the `Server-Timing` HTTP response header, which allows the server to communicate custom performance metrics in a well defined format, and a `ServerEntry` interface <!--that extends the [[!Navigation Timing]] and [[!Resource Timing]]--> and defines how the `Server-Timing` HTTP response header is parsed to create associated metrics in the performance timeline.</p>
+    <p><dfn>Server Timing</dfn> constitutes of two parts: a definition of the `Server-Timing` header field, which allows the server to communicate performance metrics and descriptions within the response and in a well defined format, and a `PerformanceServerTiming` interface to allow JavaScript to collect, process, and act on these metrics to optimize application delivery.</p>
 
     <section>
-      <h2>The `Server-Timing` HTTP response header</h2>
+      <h2>The `Server-Timing` Header Field</h2>
 
-      <p>The `Server-Timing` response header field describes the server metrics associated with processing of the request. The server is NOT required to provide server metrics and is in full control which metrics are returned, when, and to whom - e.g. the server may provide detailed metrics to correctly authenticed users only, it may provide a different set of metrics to others, or nothing at all.</p>
+      <p>The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) syntax for the <a>Server-Timing header field</a> is as follows:</p>
 
-      <p>The `Server-Timing` field-value is a comma-delimited list of metric header fields, with a mandatory metric `name` and optional `duration` and `description` values for each. For example, the following response header communicates four metrics:</p>
+      <pre>
+Server-Timing = "Server-Timing" ":" [ metric ]  \*( ";" [ description ] )
 
-      <pre>Server-Timing: db=53, app=47;customView, dc;atl</pre>
+metric                 = metric-name [ "=" metric-value ]
+metric-name            = token
+metric-value           = 1\*digit [ "." 1\*digit ]
+description            = token | quoted-string
+      </pre>
+
+      <ul>
+        <li>Each metric MUST have a name.</li>
+        <ul>
+          <li>Metric names MAY be repeated.</li>
+          <li>Metric names are defined by the server.</li>
+        </ul>
+        <li>Each metric MAY have an optional numeric value.</li>
+        <li>Each metric MAY have an optional description.</li>
+        <li>The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.</li>
+      </ul>
+
+      <p>See [[!RFC7230]] for definitions of `token`, `digit`, and `quoted-string`.</p>
+
+      <div class="note">
+        To minimize the HTTP overhead the provided metrics and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
+      </div>
+
+      <div class="note">The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.</div>
+    </section>
+
+    <section>
+      <h2>The `PerformanceServerTiming` Interface</h2>
+      <p>The <dfn>PerformanceServerTiming</dfn> interface participates in the [[PERFORMANCE-TIMELINE]] and extends the following attributes of the <a href="http://www.w3.org/TR/performance-timeline/#performanceentry">PerformanceEntry</a> interface:</p>
+
+      <dl class='attributes'>
+        <dt id='widl-ServerEntry-name'>`name`</dt>
+        <dd>
+          This attribute MUST return the <a href="http://www.w3.org/TR/html5/infrastructure.html#resolve-a-url">resolved URL</a> of the requested resource. This attribute MUST NOT change even if the <a href="http://www.w3.org/TR/html5/infrastructure.html#fetch">fetch</a> redirected to a different URL.
+        </dd>
+        <dt id='widl-ServerEntry-entryType'>`entryType`</dt>
+        <dd>This attribute MUST return the DOMString "`server`".</dd>
+        <dt id='widl-ServerEntry-startTime'>`startTime`</code></dt>
+        <dd>This attribute MUST return value 0.</dd>
+        <dt id='widl-ServerEntry-duration'>`duration`</dt>
+        <dd>
+          This attribute MUST return a <a href="http://www.w3.org/TR/hr-time/#domhighrestimestamp">DOMHighResTimeStamp</a> that contains the server-specified metric value, or value 0.
+        </dd>
+      </dl>
+
+      <dl title='interface ServerEntry : PerformanceEntry' class='idl'>
+        <dt>readonly attribute DOMString metric</dt>
+        <dd>This attribute MUST return the server-specified metric name.</dd>
+        <dt>readonly attribute DOMString description</dt>
+        <dd>This attribute MUST return the server-specified metric description, or an empty string.</dd>
+      </dl>
+    </section>
+  </section>
+
+  <section>
+    <h2>Process</h2>
+    <section>
+      <h2>Processing Model</h2>
+      <ol>
+        <li>Once the <a href="http://www.w3.org/TR/html5/browsers.html#create-a-document-object">Window object of the current document is created</a> the user agent MUST create a <a href="http://www.w3.org/TR/performance-timeline/#performanceentrylist">PerformanceEntryList</a> object to store the list of <a>PerformanceServerTiming</a> resources.</li>
+
+        <li>For each server-specified metric received via the <a>Server-Timing header field</a> perform the following steps:</li>
+        <ol>
+          <li id="step-create-object">Create a new <a>PerformanceServerTiming</a> object and set <a href="#widl-ServerEntry-entryType">entryType</a> to the DOMString `server`.</li>
+          <li>Set the <a href="#widl-ServerEntry-name">name</a> to the <a href="http://www.w3.org/TR/html5/infrastructure.html#resolve-a-url">resolved URL</a> of the requested resource.</li>
+          <li>Set <a href="#widl-ServerEntry-metric">metric</a> to the server-specified metric name.</li>
+          <li>Set <a href="#widl-ServerEntry-duration">duration</a> to the server-specified metric value, or value 0.</li>
+          <li>Set <a href="#widl-ServerEntry-duration">description</a> to the server-specified metric description, or an empty string.</li>
+          <li>Set <a href="#widl-ServerEntry-startTime">startTime</a> to the value 0.</li>
+        </ol>
+      </ol>
+
+      <p>The user-agent MUST process <a>Server-Timing header field</a> communicated via a trailer field (see [[!RFC7230]] section 4.1.2) using the same algorithm.</p>
+    </section>
+
+    <section>
+      <h2>Cross-origin Resources</h2>
+      <p>Cross-origin resources (i.e. non <a href="https://tools.ietf.org/html/rfc6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a href="http://www.w3.org/TR/performance-timeline/#sec-performance-timeline">Performance Timeline</a>. If the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING]], fails for a cross-origin resource:</p>
+
+      <ul>
+        <li>The <a href="#widl-ServerEntry-duration">duration</a> MUST be set to value 0.</li>
+        <li>The <a href="#widl-ServerEntry-duration">description</a> MUST be set to an empty string.</li>
+      </ul>
+
+      <p>Server must return the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], to allow the user agent to fully expose, to the document origin(s) specified, the values of attributes that would have been set to zero or empty string due to the cross-origin restrictions.</p>
+    </section>
+  </section>
+
+  <section>
+    <h2>Examples</h2>
+    <section>
+    <pre class="example">
+> GET /resource HTTP/1.1
+> Host: example.com
+
+< HTTP/1.1 200 OK
+< Server-Timing: miss, db=53, app=47.2;
+< Server-Timing: customView, dc;atl
+< Trailer: Server-Timing
+< (... snip response body ...)
+< Trailer: total=123.4
+      </pre>
 
       <table class="parameters">
         <thead>
@@ -78,43 +179,35 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>db</td><td>53</td><td></td></tr>
-          <tr><td>app</td><td>47</td><td>customView</td></tr>
+          <tr><td>miss</td><td></td><td></td></tr>
           <tr><td>dc</td><td></td><td>atl</td></tr>
+          <tr><td>db</td><td>53</td><td></td></tr>
+          <tr><td>app</td><td>47.2</td><td>customView</td></tr>
+          <tr><td>total</td><td>123.4</td><td></td></tr>
         </tbody>
       </table>
 
-      <p>Above metrics may indicate that the database ("db") time to query the database was 53 ms, the application server ("app") took 47 ms to process the data (via "customView" template or function), and that the request was routed through the "atl" datacenter ("dc").</p>
+      <p>The above header fields communicates five distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for `example.com/resource` fetch:</p>
 
-      <div class="note">
-        To minimize the HTTP overhead, the provided metric names and descriptions should be kept short (e.g. use abbreviations). Similarly, optional values such as duration and descriptions should be omitted when not absolutely necessary.
-      </div>
-    </section>
+      <ol>
+        <li>There was a cache miss.</li>
+        <li>The request was routed through the "atl" datacenter ("dc").</li>
+        <li>The database ("db") time was 53 ms.</li>
+        <li>The application server ("app") took 47.2ms to process "customView" template or function.</li>
+        <li>The total time for the request-response cycle on the server was 123.4ms, which is recorded at the end of the response and delivered via a trailer field.</li>
+      </ol>
 
-    <section>
-      <h2>The `ServerEntry` interface</h2>
-      <dl title='interface ServerEntry' class='idl'>
-        <dt>readonly attribute DOMString name</dt>
-        <dd>
-          This attribute MUST return the server-specified identifier for this ServerEntry object. This identifier does not have to be unique.
-        </dd>
-        <dt>readonly attribute DOMString description</dt>
-        <dd>
-          This attribute MUST return the server-specified annotation for this ServerEntry object.
-        </dd>
-        <dt>readonly attribute DOMHighResTimeStamp duration</dt>
-        <dd>
-          This attribute MUST return a DOMHighResTimeStamp that contains the server-specified duration time value for this ServerEntry object.
-        </dd>
-      </dl>
-    </section>
-  </section>
+      <p>The application can collect, process, and act on the provided metrics via the provided JavaScript interface:</p>
 
-  <section>
-    <h2>Processing model</h2>
-    <section>
-      <h2>TBD</h2>
-      <p>...</p>
+      <pre class="example highlight">
+      var serverMetrics = window.performance.getEntriesByName('https://example.com/resource.jpg');
+      for (i = 0; i < serverMetrics.length; i++) {
+          entry = serverMetrics[i];
+          if (entry == "server") {
+                  // entry.metric, entry.duration, entry.description
+          }
+      }
+      </pre>
     </section>
   </section>
 
@@ -145,10 +238,17 @@
     </section>
   </section>
 
+  <section class='informative'>
+    <h2>Privacy and Security</h2>
+
+    <p>The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `ServerTiming` interface is restricted by the <a href="http://www.w3.org/TR/html5/origin-0.html#origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], that species the domains that are allowed to access the server metrics.</p>
+
+    <p>In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.</p>
+  </section>
 
   <section class="appendix">
     <h2>Acknowledgments</h2>
-    <p>...</p>
+    <p>This document reuses text from the [[NAVIGATION-TIMING]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.</p>
   </section>
 
 </body>
