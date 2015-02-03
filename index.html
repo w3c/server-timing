@@ -120,6 +120,30 @@ description            = token | quoted-string
         <dt>serializer = { inherit, attribute }</dt>
       </dl>
     </section>
+
+    <section>
+      <h2>Extensions to the <code>Performance</code> Interface</h2>
+      <dl title='partial interface Performance' class='idl'>
+        <dt>void clearServerTimings()</dt>
+        <dd>This method clears the buffer used to store the current list of <a>PerformanceServerTiming</a> resources.</dd>
+
+        <dt>void setServerTimingBufferSize(unsigned long maxSize)</dt>
+        <dd>This method, when invoked, MUST set the maximum number of <a>PerformanceServerTiming</a> resources that may be stored in the buffer to the value of the `maxSize` parameter. The buffer is considered to be full if the number of entries in it is greater than or equal to `maxSize`.
+
+        <p>If this method is not called, the user agent SHOULD store at least 150 <a>PerformanceServerTiming</a> resources in the buffer, unless otherwise specified by the user agent.</p>
+
+        <p>If the `maxSize` parameter is less than the number of elements currently stored in the buffer, no elements in the buffer are to be removed and the user agent MUST NOT fire the `servertimingbufferfull` event.</p>
+
+          <dl class="parameters">
+            <dt>unsigned long maxSize</dt>
+            <dd>This parameter sets the maximum number of <a>PerformanceServerTiming</a> resources that will be stored in the buffer.</dd>
+          </dl>
+        </dd>
+
+        <dt>attribute EventHandler onservertimingbufferfull</dt>
+        <dd>The event handler for the `servertimingbufferfull` event. Immediately after the buffer used to store the list of <a>PerformanceServerTiming</a> resources becomes full, the user agent MUST fire a simple event named <code>servertimingbufferfull</code> that bubbles, isn't cancelable, has no default action, at the <a href="http://www.w3.org/TR/navigation-timing-2/#performance">Performance</a> object.</dd>
+      </dl>
+    </section>
   </section>
 
   <section>
@@ -127,7 +151,8 @@ description            = token | quoted-string
     <section>
       <h2>Processing Model</h2>
       <ol>
-        <li>Once the <a href="http://www.w3.org/TR/html5/browsers.html#create-a-document-object">Window object of the current document is created</a> the user agent MUST create a <a href="http://www.w3.org/TR/performance-timeline/#performanceentrylist">PerformanceEntryList</a> object to store the list of <a>PerformanceServerTiming</a> resources.</li>
+        <li>Once the <a href="http://www.w3.org/TR/html5/browsers.html#create-a-document-object">Window object of the current document is created</a> the user agent MUST create a <a href="http://www.w3.org/TR/performance-timeline/#performanceentrylist">PerformanceEntryList</a> object (<dfn>primary buffer</dfn>) to store the list of <a>PerformanceServerTiming</a> resources.</li>
+        <li>Set the <a>primary buffer</a> to a size of 150, unless otherwise specified by the user agent or set by the <a href="#widl-Performance-setServerTimingBufferSize-void-unsigned-long-maxSize">setServerTimingBufferSize</a> method.</li>
 
         <li>For each server-specified metric received via the <a>Server-Timing header field</a> perform the following steps:</li>
         <ol>
@@ -137,6 +162,14 @@ description            = token | quoted-string
           <li>Set <a href="#widl-ServerEntry-duration">duration</a> to the server-specified metric value, or value 0.</li>
           <li>Set <a href="#widl-ServerEntry-duration">description</a> to the server-specified metric description, or an empty string.</li>
           <li>Set <a href="#widl-ServerEntry-startTime">startTime</a> to the value 0.</li>
+
+          <li>If the <a>primary buffer</a> is full, discard the <a>PerformanceServerTiming</a> object, created in step 3. Otherwise, add it to the <a>primary buffer</a>. If adding it causes the <a> primary buffer</a> to become full, fire the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event at the Document.
+          <ol>
+            <li>If the <a href="#widl-Performance-clearServerTimings-void">clearServerTimings</a> method is called in the event handler for the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event, clear all <a>PerformanceServerTiming</a> objects in the <a>primary buffer</a>.</li>
+            <li>If the <a href="#widl-Performance-setServerTimingBufferSize-void-unsigned-long-maxSize">setServerTimingBufferSize</a> method is called in the event handler for the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event,
+            set the maximum size of the <a>primary buffer</a> to the `maxSize` parameter. If the `maxSize` parameter is less than the number of elements currently stored in the buffer, no elements in the buffer are to be removed.</li>
+          </ol>
+          </li>
         </ol>
       </ol>
 
