@@ -170,7 +170,7 @@ description            = token | quoted-string
             <li>Set <a href="#widl-ServerEntry-startTime">startTime</a> to the value 0.</li>
             <li>If the <a>primary buffer</a> is full, discard the <a>PerformanceServerTiming</a> object, created in step 3. Otherwise, add it to the <a>primary buffer</a>  . If adding it causes the <a> primary buffer</a> to become full, fire the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a>   event at the Document.
               <ol>
-                <li>If the <a href="#widl-Performance-clearServerTimings-void">clearServerTimings</a> method is called in the event handler for the <a href="#widl-    Performance-onservertimingbufferfull">servertimingbufferfull</a> event, clear all <a>PerformanceServerTiming</a> objects in the <a>primary buffer</a>.</li  >
+                <li>If the <a href="#widl-Performance-clearServerTimings-void">clearServerTimings</a> method is called in the event handler for the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event, clear all <a>PerformanceServerTiming</a> objects in the <a>primary buffer</a>.</li  >
                 <li>If the <a href="#widl-Performance-setServerTimingBufferSize-void-unsigned-long-maxSize">setServerTimingBufferSize</a> method is called in the event     handler for the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event,
                 set the maximum size of the <a>primary buffer</a> to the `maxSize` parameter. If the `maxSize` parameter is less than the number of elements currently   stored in the buffer, no elements in the buffer are to be removed.</li>
               </ol>
@@ -241,7 +241,7 @@ description            = token | quoted-string
 
       <pre class="example highlight">
       var serverMetrics = window.performance.getEntriesByName('https://example.com/resource.jpg');
-      for (i = 0; i < serverMetrics.length; i++) {
+      for (i = 0; i &lt; serverMetrics.length; i++) {
           entry = serverMetrics[i];
           if (entry == "server") {
                   // entry.metric, entry.duration, entry.description
