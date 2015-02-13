@@ -4,7 +4,7 @@
 <head>
   <title>Server Timing</title>
   <meta charset='utf-8'>
-  <script src='//www.w3.org/Tools/respec/respec-w3c-common' async class='remove'></script>
+  <script src='http://www.w3.org/Tools/respec/respec-w3c-common' async class='remove'></script>
   <script class='remove'>
   var respecConfig = {
     shortName: "server-timing",
@@ -52,10 +52,10 @@
     </p>
   </section>
 
-  <section>
+  <section class='informative'>
     <h2>Introduction</h2>
 
-    <p>Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING]] and [[RESOURCE-TIMING]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g. how the request was routed, where the time was spent on the server, and so on.</p>
+    <p>Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING-2]] and [[RESOURCE-TIMING]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g. how the request was routed, where the time was spent on the server, and so on.</p>
 
     <p>This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.</p>
   </section>
@@ -101,12 +101,12 @@ description            = token | quoted-string
 
     <section>
       <h2>The `PerformanceServerTiming` Interface</h2>
-      <p>The <dfn>PerformanceServerTiming</dfn> interface participates in the [[PERFORMANCE-TIMELINE]] and extends the following attributes of the <a href="http://www.w3.org/TR/performance-timeline/#performanceentry">PerformanceEntry</a> interface:</p>
+      <p>The <dfn>PerformanceServerTiming</dfn> interface participates in the [[!PERFORMANCE-TIMELINE]] and extends the following attributes of the <a href="http://www.w3.org/TR/performance-timeline/#performanceentry">PerformanceEntry</a> interface:</p>
 
       <dl class='attributes'>
         <dt id='widl-ServerEntry-name'>`name`</dt>
         <dd>
-          This attribute MUST return the <a href="http://www.w3.org/TR/html5/infrastructure.html#resolve-a-url">resolved URL</a> of the requested resource. This attribute MUST NOT change even if the <a href="http://www.w3.org/TR/html5/infrastructure.html#fetch">fetch</a> redirected to a different URL.
+          This attribute MUST return the <a href="http://www.w3.org/TR/html5/infrastructure.html#resolve-a-url">resolved URL</a> of the requested resource [[!HTML5]]. This attribute MUST NOT change even if the <a href="http://www.w3.org/TR/html5/infrastructure.html#fetch">fetch</a> redirected to a different URL.
         </dd>
         <dt id='widl-ServerEntry-entryType'>`entryType`</dt>
         <dd>This attribute MUST return the DOMString "`server`".</dd>
@@ -114,7 +114,7 @@ description            = token | quoted-string
         <dd>This attribute MUST return value 0.</dd>
         <dt id='widl-ServerEntry-duration'>`duration`</dt>
         <dd>
-          This attribute MUST return a <a href="http://www.w3.org/TR/hr-time/#domhighrestimestamp">DOMHighResTimeStamp</a> that contains the server-specified metric value, or value 0.
+          This attribute MUST return a <a href="http://www.w3.org/TR/hr-time/#domhighrestimestamp">DOMHighResTimeStamp</a> [[!HR-TIME]] that contains the server-specified metric value, or value 0.
         </dd>
       </dl>
 
@@ -147,7 +147,7 @@ description            = token | quoted-string
         </dd>
 
         <dt>attribute EventHandler onservertimingbufferfull</dt>
-        <dd>The event handler for the `servertimingbufferfull` event. Immediately after the buffer used to store the list of <a>PerformanceServerTiming</a> resources becomes full, the user agent MUST fire a simple event named <code>servertimingbufferfull</code> that bubbles, isn't cancelable, has no default action, at the <a href="http://www.w3.org/TR/navigation-timing-2/#performance">Performance</a> object.</dd>
+        <dd>The event handler for the `servertimingbufferfull` event. Immediately after the buffer used to store the list of <a>PerformanceServerTiming</a> resources becomes full, the user agent MUST fire a simple event named <code>servertimingbufferfull</code> that bubbles, isn't cancelable, has no default action, at the <a href="http://www.w3.org/TR/navigation-timing-2/#performance">Performance</a> object [[!NAVIGATION-TIMING-2]].</dd>
       </dl>
     </section>
   </section>
@@ -195,7 +195,15 @@ description            = token | quoted-string
     </section>
   </section>
 
-  <section>
+  <section class='informative'>
+    <h2>Privacy and Security</h2>
+
+    <p>The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `ServerTiming` interface is restricted by the <a href="http://www.w3.org/TR/html5/origin-0.html#origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[!RESOURCE-TIMING]], that species the domains that are allowed to access the server metrics.</p>
+
+    <p>In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.</p>
+  </section>
+
+  <section class='appendix informative'>
     <h2>Examples</h2>
     <section>
     <pre class="example">
@@ -251,7 +259,7 @@ description            = token | quoted-string
     </section>
   </section>
 
-  <section>
+  <section class='appendix informative'>
     <h2>Use cases</h2>
 
     <section>
@@ -278,17 +286,9 @@ description            = token | quoted-string
     </section>
   </section>
 
-  <section class='informative'>
-    <h2>Privacy and Security</h2>
-
-    <p>The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `ServerTiming` interface is restricted by the <a href="http://www.w3.org/TR/html5/origin-0.html#origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], that species the domains that are allowed to access the server metrics.</p>
-
-    <p>In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.</p>
-  </section>
-
   <section class="appendix">
     <h2>Acknowledgments</h2>
-    <p>This document reuses text from the [[NAVIGATION-TIMING]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.</p>
+    <p>This document reuses text from the [[NAVIGATION-TIMING-2]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.</p>
   </section>
 
 </body>
