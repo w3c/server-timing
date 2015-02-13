@@ -15,11 +15,13 @@
       url: "https://www.igvita.com/",
       mailto: "igrigorik@gmail.com",
       company: "Google",
-      companyURL: "https://google.com/"
-    }, ],
+      companyURL: "https://google.com/",
+      w3cid: "56102"
+    }],
     wg: "Web Performance Working Group",
     wgURI: "http://www.w3.org/2010/webperf/",
     wgPublicList: "public-web-perf",
+    subjectPrefix: "[Server Timing]",
     format: "markdown",
     otherLinks: [{
       key: 'Repository',
@@ -33,7 +35,8 @@
         value: 'Commit history.',
         href: 'https://github.com/w3c/server-timing/commits/gh-pages/index.html'
       }]
-    }]
+    }],
+    wgPatentURI:  "http://www.w3.org/2004/01/pp-impl/45211/status"
   };
   </script>
 </head>
@@ -44,7 +47,9 @@
   </section>
 
   <section id='sotd'>
-    <p></p>
+    <p>
+      This is a <strong>work in progress</strong> and may change without any notices.
+    </p>
   </section>
 
   <section>
@@ -74,11 +79,12 @@ description            = token | quoted-string
       </pre>
 
       <ul>
-        <li>Each metric MUST have a name.</li>
-        <ul>
-          <li>Metric names MAY be repeated.</li>
-          <li>Metric names are defined by the server.</li>
-        </ul>
+        <li>Each metric MUST have a name.
+          <ul>
+            <li>Metric names MAY be repeated.</li>
+            <li>Metric names are defined by the server.</li>
+          </ul>
+        </li>
         <li>Each metric MAY have an optional numeric value.</li>
         <li>Each metric MAY have an optional description.</li>
         <li>The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.</li>
@@ -104,7 +110,7 @@ description            = token | quoted-string
         </dd>
         <dt id='widl-ServerEntry-entryType'>`entryType`</dt>
         <dd>This attribute MUST return the DOMString "`server`".</dd>
-        <dt id='widl-ServerEntry-startTime'>`startTime`</code></dt>
+        <dt id='widl-ServerEntry-startTime'>`startTime`</dt>
         <dd>This attribute MUST return value 0.</dd>
         <dt id='widl-ServerEntry-duration'>`duration`</dt>
         <dd>
@@ -154,23 +160,23 @@ description            = token | quoted-string
         <li>Once the <a href="http://www.w3.org/TR/html5/browsers.html#create-a-document-object">Window object of the current document is created</a> the user agent MUST create a <a href="http://www.w3.org/TR/performance-timeline/#performanceentrylist">PerformanceEntryList</a> object (<dfn>primary buffer</dfn>) to store the list of <a>PerformanceServerTiming</a> resources.</li>
         <li>Set the <a>primary buffer</a> to a size of 150, unless otherwise specified by the user agent or set by the <a href="#widl-Performance-setServerTimingBufferSize-void-unsigned-long-maxSize">setServerTimingBufferSize</a> method.</li>
 
-        <li>For each server-specified metric received via the <a>Server-Timing header field</a> perform the following steps:</li>
-        <ol>
-          <li id="step-create-object">Create a new <a>PerformanceServerTiming</a> object and set <a href="#widl-ServerEntry-entryType">entryType</a> to the DOMString `server`.</li>
-          <li>Set the <a href="#widl-ServerEntry-name">name</a> to the <a href="http://www.w3.org/TR/html5/infrastructure.html#resolve-a-url">resolved URL</a> of the requested resource.</li>
-          <li>Set <a href="#widl-ServerEntry-metric">metric</a> to the server-specified metric name.</li>
-          <li>Set <a href="#widl-ServerEntry-duration">duration</a> to the server-specified metric value, or value 0.</li>
-          <li>Set <a href="#widl-ServerEntry-duration">description</a> to the server-specified metric description, or an empty string.</li>
-          <li>Set <a href="#widl-ServerEntry-startTime">startTime</a> to the value 0.</li>
-
-          <li>If the <a>primary buffer</a> is full, discard the <a>PerformanceServerTiming</a> object, created in step 3. Otherwise, add it to the <a>primary buffer</a>. If adding it causes the <a> primary buffer</a> to become full, fire the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event at the Document.
+        <li>For each server-specified metric received via the <a>Server-Timing header field</a> perform the following steps:
           <ol>
-            <li>If the <a href="#widl-Performance-clearServerTimings-void">clearServerTimings</a> method is called in the event handler for the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event, clear all <a>PerformanceServerTiming</a> objects in the <a>primary buffer</a>.</li>
-            <li>If the <a href="#widl-Performance-setServerTimingBufferSize-void-unsigned-long-maxSize">setServerTimingBufferSize</a> method is called in the event handler for the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event,
-            set the maximum size of the <a>primary buffer</a> to the `maxSize` parameter. If the `maxSize` parameter is less than the number of elements currently stored in the buffer, no elements in the buffer are to be removed.</li>
+            <li id="step-create-object">Create a new <a>PerformanceServerTiming</a> object and set <a href="#widl-ServerEntry-entryType">entryType</a> to the DOMString   `server`.</li>
+            <li>Set the <a href="#widl-ServerEntry-name">name</a> to the <a href="http://www.w3.org/TR/html5/infrastructure.html#resolve-a-url">resolved URL</a> of the   requested resource.</li>
+            <li>Set <a href="#widl-ServerEntry-metric">metric</a> to the server-specified metric name.</li>
+            <li>Set <a href="#widl-ServerEntry-duration">duration</a> to the server-specified metric value, or value 0.</li>
+            <li>Set <a href="#widl-ServerEntry-duration">description</a> to the server-specified metric description, or an empty string.</li>
+            <li>Set <a href="#widl-ServerEntry-startTime">startTime</a> to the value 0.</li>
+            <li>If the <a>primary buffer</a> is full, discard the <a>PerformanceServerTiming</a> object, created in step 3. Otherwise, add it to the <a>primary buffer</a>  . If adding it causes the <a> primary buffer</a> to become full, fire the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a>   event at the Document.
+              <ol>
+                <li>If the <a href="#widl-Performance-clearServerTimings-void">clearServerTimings</a> method is called in the event handler for the <a href="#widl-    Performance-onservertimingbufferfull">servertimingbufferfull</a> event, clear all <a>PerformanceServerTiming</a> objects in the <a>primary buffer</a>.</li  >
+                <li>If the <a href="#widl-Performance-setServerTimingBufferSize-void-unsigned-long-maxSize">setServerTimingBufferSize</a> method is called in the event     handler for the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event,
+                set the maximum size of the <a>primary buffer</a> to the `maxSize` parameter. If the `maxSize` parameter is less than the number of elements currently   stored in the buffer, no elements in the buffer are to be removed.</li>
+              </ol>
+            </li>
           </ol>
-          </li>
-        </ol>
+        </li>
       </ol>
 
       <p>The user-agent MUST process <a>Server-Timing header field</a> communicated via a trailer field (see [[!RFC7230]] section 4.1.2) using the same algorithm.</p>
@@ -196,12 +202,12 @@ description            = token | quoted-string
 > GET /resource HTTP/1.1
 > Host: example.com
 
-< HTTP/1.1 200 OK
-< Server-Timing: miss, db=53, app=47.2;
-< Server-Timing: customView, dc;atl
-< Trailer: Server-Timing
-< (... snip response body ...)
-< Server-Timing: total=123.4
+&lt; HTTP/1.1 200 OK
+&lt; Server-Timing: miss, db=53, app=47.2;
+&lt; Server-Timing: customView, dc;atl
+&lt; Trailer: Server-Timing
+&lt; (... snip response body ...)
+&lt; Server-Timing: total=123.4
       </pre>
 
       <table class="parameters">
