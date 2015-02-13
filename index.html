@@ -8,14 +8,15 @@
   <script class='remove'>
   var respecConfig = {
     shortName: "server-timing",
-    specStatus: "ED",
+    specStatus: "FPWD",
     edDraftURI: "http://w3c.github.io/server-timing/",
+    publishDate: "2015-02-17",
     editors: [{
       name: "Ilya Grigorik",
       url: "https://www.igvita.com/",
       mailto: "igrigorik@gmail.com",
       company: "Google",
-      companyURL: "https://google.com/",
+      companyURL: "https://www.google.com/",
       w3cid: "56102"
     }],
     wg: "Web Performance Working Group",
@@ -147,7 +148,7 @@ description            = token | quoted-string
         </dd>
 
         <dt>attribute EventHandler onservertimingbufferfull</dt>
-        <dd>The event handler for the `servertimingbufferfull` event. Immediately after the buffer used to store the list of <a>PerformanceServerTiming</a> resources becomes full, the user agent MUST fire a simple event named <code>servertimingbufferfull</code> that bubbles, isn't cancelable, has no default action, at the <a href="http://www.w3.org/TR/navigation-timing-2/#performance">Performance</a> object [[!NAVIGATION-TIMING-2]].</dd>
+        <dd>The event handler for the `servertimingbufferfull` event. Immediately after the buffer used to store the list of <a>PerformanceServerTiming</a> resources becomes full, the user agent MUST fire a simple event named <code>servertimingbufferfull</code> that bubbles, isn't cancelable, has no default action, at the <a href="http://www.w3.org/TR/navigation-timing-2/#idl-def-Performance">Performance</a> object [[!NAVIGATION-TIMING-2]].</dd>
       </dl>
     </section>
   </section>
@@ -198,7 +199,7 @@ description            = token | quoted-string
   <section class='informative'>
     <h2>Privacy and Security</h2>
 
-    <p>The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `ServerTiming` interface is restricted by the <a href="http://www.w3.org/TR/html5/origin-0.html#origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[!RESOURCE-TIMING]], that species the domains that are allowed to access the server metrics.</p>
+    <p>The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `ServerTiming` interface is restricted by the <a href="http://www.w3.org/TR/html5/browsers.html#same-origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[!RESOURCE-TIMING]], that species the domains that are allowed to access the server metrics.</p>
 
     <p>In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.</p>
   </section>
