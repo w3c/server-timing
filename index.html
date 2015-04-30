@@ -205,6 +205,26 @@ description            = token | quoted-string
     <p>In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.</p>
   </section>
 
+  <section>
+    <h2>IANA Considerations</h2>
+    <p>The permanent message header field registry  should be updated with the following registrations ([[RFC3864]]):</p>
+
+    <section>
+      <h2>Server-Timing</h2>
+      <dl>
+        <dt>Header field name</dt>
+        <dd>Server-Timing</dd>
+        <dt>Applicable protocol</dt>
+        <dd>http</dd>
+        <dt>Status</dt>
+        <dd>standard</dd>
+        <dt>Author/Change controller</dt>
+        <dd>W3C</dd>
+        <dt>Specification document</dt><dd>This specification (See <a>Server Timing</a> Header Field)</dd>
+      </dl>
+    </section>
+  </section>
+
   <section class='appendix informative'>
     <h2>Examples</h2>
     <section>
