@@ -71,8 +71,9 @@
       <p>The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) syntax for the <a>Server-Timing header field</a> is as follows:</p>
 
       <pre>
-Server-Timing = "Server-Timing" ":" metric  [ ";" description ]
+Server-Timing = "Server-Timing" ":" #server-timing-metric
 
+server-timing-metric   = metric  [ ";" description ]
 metric                 = metric-name [ "=" metric-value ]
 metric-name            = token
 metric-value           = 1\*digit [ "." 1\*digit ]
