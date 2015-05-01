@@ -71,8 +71,9 @@
       <p>The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) syntax for the <a>Server-Timing header field</a> is as follows:</p>
 
       <pre>
-Server-Timing = "Server-Timing" ":" metric  [ ";" description ]
+Server-Timing = "Server-Timing" ":" #server-timing-metric
 
+server-timing-metric   = metric  [ ";" description ]
 metric                 = metric-name [ "=" metric-value ]
 metric-name            = token
 metric-value           = 1\*digit [ "." 1\*digit ]
@@ -202,6 +203,26 @@ description            = token | quoted-string
     <p>The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `ServerTiming` interface is restricted by the <a href="http://www.w3.org/TR/html5/browsers.html#same-origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[!RESOURCE-TIMING]], that species the domains that are allowed to access the server metrics.</p>
 
     <p>In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.</p>
+  </section>
+
+  <section>
+    <h2>IANA Considerations</h2>
+    <p>The permanent message header field registry  should be updated with the following registrations ([[RFC3864]]):</p>
+
+    <section>
+      <h2>Server-Timing</h2>
+      <dl>
+        <dt>Header field name</dt>
+        <dd>Server-Timing</dd>
+        <dt>Applicable protocol</dt>
+        <dd>http</dd>
+        <dt>Status</dt>
+        <dd>standard</dd>
+        <dt>Author/Change controller</dt>
+        <dd>W3C</dd>
+        <dt>Specification document</dt><dd>This specification (See <a>Server Timing</a> Header Field)</dd>
+      </dl>
+    </section>
   </section>
 
   <section class='appendix informative'>
