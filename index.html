@@ -8,9 +8,8 @@
   <script class='remove'>
   var respecConfig = {
     shortName: "server-timing",
-    specStatus: "FPWD",
+    specStatus: "ED",
     edDraftURI: "https://w3c.github.io/server-timing/",
-    publishDate: "2015-02-17",
     editors: [{
       name: "Ilya Grigorik",
       url: "https://www.igvita.com/",
@@ -103,7 +102,7 @@ description            = token | quoted-string
 
     <section>
       <h2>The `PerformanceServerTiming` Interface</h2>
-      <p>The <dfn>PerformanceServerTiming</dfn> interface participates in the [[!PERFORMANCE-TIMELINE]] and extends the following attributes of the <a href="http://www.w3.org/TR/performance-timeline/#performanceentry">PerformanceEntry</a> interface:</p>
+      <p>The <dfn>PerformanceServerTiming</dfn> interface participates in the [[!PERFORMANCE-TIMELINE-2]] and extends the following attributes of the <a href="http://www.w3.org/TR/performance-timeline-2/#performanceentry">PerformanceEntry</a> interface:</p>
 
       <dl class='attributes'>
         <dt id='widl-ServerEntry-name'>`name`</dt>
@@ -116,7 +115,7 @@ description            = token | quoted-string
         <dd>This attribute MUST return value 0.</dd>
         <dt id='widl-ServerEntry-duration'>`duration`</dt>
         <dd>
-          This attribute MUST return a <a href="http://www.w3.org/TR/hr-time/#domhighrestimestamp">DOMHighResTimeStamp</a> [[!HR-TIME]] that contains the server-specified metric value, or value 0.
+          This attribute MUST return a <a href="http://www.w3.org/TR/hr-time-2/#domhighrestimestamp">DOMHighResTimeStamp</a> [[!HR-TIME-2]] that contains the server-specified metric value, or value 0.
         </dd>
       </dl>
 
@@ -149,7 +148,7 @@ description            = token | quoted-string
         </dd>
 
         <dt>attribute EventHandler onservertimingbufferfull</dt>
-        <dd>The event handler for the `servertimingbufferfull` event. Immediately after the buffer used to store the list of <a>PerformanceServerTiming</a> resources becomes full, the user agent MUST fire a simple event named <code>servertimingbufferfull</code> that bubbles, isn't cancelable, has no default action, at the <a href="http://www.w3.org/TR/navigation-timing-2/#idl-def-Performance">Performance</a> object [[!NAVIGATION-TIMING-2]].</dd>
+        <dd>The event handler for the `servertimingbufferfull` event. Immediately after the buffer used to store the list of <a>PerformanceServerTiming</a> resources becomes full, the user agent MUST fire a simple event named <code>servertimingbufferfull</code> that bubbles, isn't cancelable, has no default action, at the <a href="http://www.w3.org/TR/hr-time-2/#idl-def-Performance">Performance</a> object [[!NAVIGATION-TIMING-2]].</dd>
       </dl>
     </section>
   </section>
@@ -159,7 +158,7 @@ description            = token | quoted-string
     <section>
       <h2>Processing Model</h2>
       <ol>
-        <li>Once the <a href="http://www.w3.org/TR/html5/browsers.html#create-a-document-object">Window object of the current document is created</a> the user agent MUST create a <a href="http://www.w3.org/TR/performance-timeline/#performanceentrylist">PerformanceEntryList</a> object (<dfn>primary buffer</dfn>) to store the list of <a>PerformanceServerTiming</a> resources.</li>
+        <li>Once the <a href="http://www.w3.org/TR/html5/browsers.html#create-a-document-object">Window object of the current document is created</a> the user agent MUST create a <a href="http://www.w3.org/TR/performance-timeline-2/#performanceentrylist">PerformanceEntryList</a> object (<dfn>primary buffer</dfn>) to store the list of <a>PerformanceServerTiming</a> resources.</li>
         <li>Set the <a>primary buffer</a> to a size of 150, unless otherwise specified by the user agent or set by the <a href="#widl-Performance-setServerTimingBufferSize-void-unsigned-long-maxSize">setServerTimingBufferSize</a> method.</li>
 
         <li>For each server-specified metric received via the <a>Server-Timing header field</a> perform the following steps:
@@ -186,7 +185,7 @@ description            = token | quoted-string
 
     <section>
       <h2>Cross-origin Resources</h2>
-      <p>Cross-origin resources (i.e. non <a href="https://tools.ietf.org/html/rfc6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a href="http://www.w3.org/TR/performance-timeline/#sec-performance-timeline">Performance Timeline</a>. If the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING]], fails for a cross-origin resource:</p>
+      <p>Cross-origin resources (i.e. non <a href="https://tools.ietf.org/html/rfc6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a href="http://www.w3.org/TR/performance-timeline-2/#sec-performance-timeline">Performance Timeline</a>. If the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING]], fails for a cross-origin resource:</p>
 
       <ul>
         <li>The <a href="#widl-ServerEntry-duration">duration</a> MUST be set to value 0.</li>
@@ -310,7 +309,7 @@ description            = token | quoted-string
 
   <section class="appendix">
     <h2>Acknowledgments</h2>
-    <p>This document reuses text from the [[NAVIGATION-TIMING-2]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.</p>
+    <p>This document reuses text from the [[NAVIGATION-TIMING-2]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE-2]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.</p>
   </section>
 
 </body>
