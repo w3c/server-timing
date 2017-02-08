@@ -115,9 +115,9 @@ description            = token | quoted-string
       </dl>
 
       <dl title='interface ServerEntry : PerformanceEntry' class='idl'>
-        <dt>readonly attribute DOMString metric</dt>
+        <dt id='widl-ServerEntry-metric'>readonly attribute DOMString metric</dt>
         <dd>This attribute MUST return the server-specified metric name.</dd>
-        <dt>readonly attribute DOMString description</dt>
+        <dt id='widl-ServerEntry-description'>readonly attribute DOMString description</dt>
         <dd>This attribute MUST return the server-specified metric description, or an empty string.</dd>
         <dt>serializer = { inherit, attribute }</dt>
       </dl>
@@ -162,7 +162,7 @@ description            = token | quoted-string
             <li>Set the <a href="#widl-ServerEntry-name">name</a> to the <a href="http://www.w3.org/TR/html5/infrastructure.html#resolve-a-url">resolved URL</a> of the   requested resource.</li>
             <li>Set <a href="#widl-ServerEntry-metric">metric</a> to the server-specified metric name.</li>
             <li>Set <a href="#widl-ServerEntry-duration">duration</a> to the server-specified metric value, or value 0.</li>
-            <li>Set <a href="#widl-ServerEntry-duration">description</a> to the server-specified metric description, or an empty string.</li>
+            <li>Set <a href="#widl-ServerEntry-description">description</a> to the server-specified metric description, or an empty string.</li>
             <li>Set <a href="#widl-ServerEntry-startTime">startTime</a> to the value 0.</li>
             <li>If the <a>primary buffer</a> is full, discard the <a>PerformanceServerTiming</a> object, created in step 3. Otherwise, add it to the <a>primary buffer</a>  . If adding it causes the <a> primary buffer</a> to become full, fire the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a>   event at the Document.
               <ol>
@@ -184,7 +184,7 @@ description            = token | quoted-string
 
       <ul>
         <li>The <a href="#widl-ServerEntry-duration">duration</a> MUST be set to value 0.</li>
-        <li>The <a href="#widl-ServerEntry-duration">description</a> MUST be set to an empty string.</li>
+        <li>The <a href="#widl-ServerEntry-description">description</a> MUST be set to an empty string.</li>
       </ul>
 
       <p>Server must return the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], to allow the user agent to fully expose, to the document origin(s) specified, the values of attributes that would have been set to zero or empty string due to the cross-origin restrictions.</p>
