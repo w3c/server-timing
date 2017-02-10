@@ -1,6 +1,4 @@
 <!DOCTYPE html>
-<html>
-
 <head>
   <title>Server Timing</title>
   <meta charset='utf-8'>
@@ -36,276 +34,263 @@
   </script>
 </head>
 
-<body>
-  <section id='abstract'>
-    <p>This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.</p>
-  </section>
+<section id='abstract'>
+  This specification enables a server to communicate performance metrics about the request-response cycle to the user agent. It also standardizes a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
+</section>
 
-  <section id='sotd'>
-    <p>
-      This is a <strong>proposal</strong> and may change without any notices. Interested parties should bring discussions to the <a href="https://www.w3.org/community/wicg/">Web Platform Incubator Community Group</a>.
-    </p>
-  </section>
+<section id='sotd'>
+  This is a **proposal** and may change without any notices. Interested parties should bring discussions to the [Web Platform Incubator Community Group](https://www.w3.org/community/wicg/).
+</section>
 
-  <section class='informative'>
-    <h2>Introduction</h2>
+<section class='informative'>
+## Introduction
 
-    <p>Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING-2]] and [[RESOURCE-TIMING]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g. how the request was routed, where the time was spent on the server, and so on.</p>
+Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[!NAVIGATION-TIMING-2]] and [[!RESOURCE-TIMING]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
 
-    <p>This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.</p>
-  </section>
+This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
+</section>
 
-  <section>
-    <h2>Server Timing</h2>
-    <p><dfn>Server Timing</dfn> constitutes of two parts: a definition of the `Server-Timing` header field, which allows the server to communicate performance metrics and descriptions within the response and in a well defined format, and a `PerformanceServerTiming` interface to allow JavaScript to collect, process, and act on these metrics to optimize application delivery.</p>
+## Server Timing
+<dfn>Server Timing</dfn> constitutes of two parts:
 
-    <section>
-      <h2>The `Server-Timing` Header Field</h2>
+  1. The `Server-Timing` HTTP header field, which allows the server to communicate performance metrics and descriptions within the response and in a well-defined format.
+  1. The <a>PerformanceServerTiming</a> interface to allow scripts to collect, process, and act on these metrics to optimize application delivery.
 
-      <p>The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) syntax for the <a>Server-Timing header field</a> is as follows:</p>
+### The `Server-Timing` Header Field
 
-      <pre>
-Server-Timing = "Server-Timing" ":" #server-timing-metric
+The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) syntax for the <a>Server-Timing header field</a> is as follows:
 
-server-timing-metric   = metric  [ ";" description ]
-metric                 = metric-name [ "=" metric-value ]
-metric-name            = token
-metric-value           = 1\*digit [ "." 1\*digit ]
-description            = token | quoted-string
-      </pre>
+```ABNF
+  Server-Timing        = "Server-Timing" ":" #server-timing-metric
+  server-timing-metric = metric  [ ";" description ]
+  metric               = metric-name [ "=" metric-value ]
+  metric-name          = token
+  metric-value         = 1\*DIGIT [ "." 1\*DIGIT ]
+  description          = token | quoted-string
+```
 
-      <ul>
-        <li>Each metric MUST have a name.
-          <ul>
-            <li>Metric names MAY be repeated.</li>
-            <li>Metric names are defined by the server.</li>
-          </ul>
-        </li>
-        <li>Each metric MAY have an optional numeric value.</li>
-        <li>Each metric MAY have an optional description.</li>
-        <li>The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.</li>
-      </ul>
+* Each metric MUST have a name.
+  * Metric names MAY be repeated.
+  * Metric names are defined by the server.
+* Each metric MAY have an optional numeric value.
+* Each metric MAY have an optional description.
+* The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.
 
-      <p>See [[!RFC7230]] for definitions of `token`, `digit`, and `quoted-string`.</p>
+See [[!RFC7230]] for definitions of `token`, `DIGIT`, and `quoted-string`.
 
-      <div class="note">
-        To minimize the HTTP overhead the provided metrics and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
-      </div>
+<div class="note">
+  To minimize the HTTP overhead the provided metrics and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
+</div>
 
-      <div class="note">The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.</div>
-    </section>
+<div class="note">
+  The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.
+</div>
 
-    <section>
-      <h2>The `PerformanceServerTiming` Interface</h2>
-      <p>The <dfn>PerformanceServerTiming</dfn> interface participates in the [[!PERFORMANCE-TIMELINE-2]] and extends the following attributes of the <a href="http://www.w3.org/TR/performance-timeline-2/#performanceentry">PerformanceEntry</a> interface:</p>
+<section data-dfn-for="PerformanceEntry" data-link-for="PerformanceEntry">
+  ## The <code><dfn>PerformanceServerTiming</dfn></code> Interface
+    
+  The <a>PerformanceServerTiming</a> interface participates in the [[!PERFORMANCE-TIMELINE-2]] and redefines the semantics of the following attributes of the <code><dfn data-cite="!performance-timeline-2#dom-performanceentry">PerformanceEntry</dfn></code> interface:
 
-      <dl class='attributes'>
-        <dt id='widl-ServerEntry-name'>`name`</dt>
-        <dd>
-          This attribute MUST return the <a href="http://www.w3.org/TR/html5/infrastructure.html#resolve-a-url">resolved URL</a> of the requested resource [[!HTML5]]. This attribute MUST NOT change even if the <a href="http://www.w3.org/TR/html5/infrastructure.html#fetch">fetch</a> redirected to a different URL.
-        </dd>
-        <dt id='widl-ServerEntry-entryType'>`entryType`</dt>
-        <dd>This attribute MUST return the DOMString "`server`".</dd>
-        <dt id='widl-ServerEntry-startTime'>`startTime`</dt>
-        <dd>This attribute MUST return value 0.</dd>
-        <dt id='widl-ServerEntry-duration'>`duration`</dt>
-        <dd>
-          This attribute MUST return a <a href="http://www.w3.org/TR/hr-time-2/#domhighrestimestamp">DOMHighResTimeStamp</a> [[!HR-TIME-2]] that contains the server-specified metric value, or value 0.
-        </dd>
-      </dl>
+  <dl>
+    <dt>`name`</dt>
+    <dd>
+      This attribute MUST return the <a data-cite="!HTML5#resolve-a-url">resolved URL</a> of the requested resource [[!HTML5]]. This attribute MUST NOT change even if the <a data-cite="!HTML5#fetch">fetch</a> redirected to a different URL.
+    </dd>
+    <dt>`entryType`</dt>
+    <dd>This attribute MUST return the DOMString "`server`".</dd>
+    <dt>`startTime`</dt>
+    <dd>This attribute MUST return value 0.</dd>
+    <dt>`duration`</dt>
+    <dd>
+      This attribute MUST return a <a data-cite="hr-time-2#idl-def-domhighrestimestamp">`DOMHighResTimeStamp`</a> [[!HR-TIME-2]] that contains the server-specified metric value, or value 0.
+    </dd>
+  </dl>
+</section>
+<section data-dfn-for="ServerEntry">
+  ## <dfn>ServerEntry</dfn> interface
+  
+  <pre class='idl'>
+  interface ServerEntry : PerformanceEntry {
+    readonly attribute DOMString metric;
+    readonly attribute DOMString description;
+    serializer = { inherit, attribute };
+  };
+  </pre>
+  
+  <dl>
+    <dt><dfn>metric</dfn> attribute</dt>
+    <dd>This attribute MUST return the server-specified metric name.</dd>
+    <dt><dfn>description</dfn> attribute</dt>
+    <dd>This attribute MUST return the server-specified metric description, or an empty string.</dd>
+    <dt><dfn>serializer</dfn></dt>
+    <dd>See [[!WebIDL]] for serializer behavior of <a data-cte="WebIDL-LS#inherit">`inherit`</a> and <a data-cte="WebIDL-LS#attribute">`attribute`</a>.</dd>
+  </dl>
+</section>
 
-      <dl title='interface ServerEntry : PerformanceEntry' class='idl'>
-        <dt>readonly attribute DOMString metric</dt>
-        <dd>This attribute MUST return the server-specified metric name.</dd>
-        <dt>readonly attribute DOMString description</dt>
-        <dd>This attribute MUST return the server-specified metric description, or an empty string.</dd>
-        <dt>serializer = { inherit, attribute }</dt>
-      </dl>
-    </section>
+<section data-dfn-for="Performance">
+  ## Extensions to `Performance` Interface
+  
+  The <code><dfn data-cite="hr-time-2#the-performance-interface">Performance</dfn></code> interface is extended with the following methods and attribute:
 
-    <section>
-      <h2>Extensions to the <code>Performance</code> Interface</h2>
-      <dl title='partial interface Performance' class='idl'>
-        <dt>void clearServerTimings()</dt>
-        <dd>This method clears the buffer used to store the current list of <a>PerformanceServerTiming</a> resources.</dd>
+  <pre class="idl">
+  partial interface Performance {
+    void clearServerTimings();
+    void setServerTimingBufferSize(unsigned long maxSize);
+    attribute EventHandler onservertimingbufferfull;
+  };
+  </pre>
+  
+  <dl>
+    <dt><dfn>clearServerTimings()</dfn> method</dt>
+    <dd>This method clears the buffer used to store the current list of <a>PerformanceServerTiming</a> resources.</dd>
 
-        <dt>void setServerTimingBufferSize(unsigned long maxSize)</dt>
-        <dd>This method, when invoked, MUST set the maximum number of <a>PerformanceServerTiming</a> resources that may be stored in the buffer to the value of the `maxSize` parameter. The buffer is considered to be full if the number of entries in it is greater than or equal to `maxSize`.
+    <dt><dfn>setServerTimingBufferSize()</dfn> method</dt>
+    <dd>This method, when invoked, MUST set the maximum number of <a>PerformanceServerTiming</a> resources that may be stored in the buffer to the value of the `maxSize` parameter. The buffer is considered to be full if the number of entries in it is greater than or equal to `maxSize`.
 
-        <p>If this method is not called, the user agent SHOULD store at least 150 <a>PerformanceServerTiming</a> resources in the buffer, unless otherwise specified by the user agent.</p>
+    If this method is not called, the user agent SHOULD store at least 150 <a>PerformanceServerTiming</a> resources in the buffer, unless otherwise specified by the user agent.
 
-        <p>If the `maxSize` parameter is less than the number of elements currently stored in the buffer, no elements in the buffer are to be removed and the user agent MUST NOT fire the `servertimingbufferfull` event.</p>
+    If the `maxSize` parameter is less than the number of elements currently stored in the buffer, no elements in the buffer are to be removed and the user agent MUST NOT fire the `servertimingbufferfull` event.
 
-          <dl class="parameters">
-            <dt>unsigned long maxSize</dt>
-            <dd>This parameter sets the maximum number of <a>PerformanceServerTiming</a> resources that will be stored in the buffer.</dd>
-          </dl>
-        </dd>
+    The <var>maxSize</var> parameter sets the maximum number of <a>PerformanceServerTiming</a> resources that will be stored in the buffer.
+    </dd>
 
-        <dt>attribute EventHandler onservertimingbufferfull</dt>
-        <dd>The event handler for the `servertimingbufferfull` event. Immediately after the buffer used to store the list of <a>PerformanceServerTiming</a> resources becomes full, the user agent MUST fire a simple event named <code>servertimingbufferfull</code> that bubbles, isn't cancelable, has no default action, at the <a href="http://www.w3.org/TR/hr-time-2/#idl-def-Performance">Performance</a> object [[!NAVIGATION-TIMING-2]].</dd>
-      </dl>
-    </section>
-  </section>
+    <dt><dfn>onservertimingbufferfull</dfn> attribute</dt>
+    <dd>The event handler for the `servertimingbufferfull` event. Immediately after the buffer used to store the list of <a>PerformanceServerTiming</a> resources becomes full, the user agent MUST fire a simple event named `servertimingbufferfull` that bubbles, isn't cancelable, has no default action, at the <a>`Performance`</a> object [[!NAVIGATION-TIMING-2]].</dd>
+  </dl>
+</section>
 
-  <section>
-    <h2>Process</h2>
-    <section>
-      <h2>Processing Model</h2>
-      <ol>
-        <li>Once the <a href="http://www.w3.org/TR/html5/browsers.html#create-a-document-object">Window object of the current document is created</a> the user agent MUST create a <a href="http://www.w3.org/TR/performance-timeline-2/#performanceentrylist">PerformanceEntryList</a> object (<dfn>primary buffer</dfn>) to store the list of <a>PerformanceServerTiming</a> resources.</li>
-        <li>Set the <a>primary buffer</a> to a size of 150, unless otherwise specified by the user agent or set by the <a href="#widl-Performance-setServerTimingBufferSize-void-unsigned-long-maxSize">setServerTimingBufferSize</a> method.</li>
+## Process
 
-        <li>For each server-specified metric received via the <a>Server-Timing header field</a> perform the following steps:
-          <ol>
-            <li id="step-create-object">Create a new <a>PerformanceServerTiming</a> object and set <a href="#widl-ServerEntry-entryType">entryType</a> to the DOMString   `server`.</li>
-            <li>Set the <a href="#widl-ServerEntry-name">name</a> to the <a href="http://www.w3.org/TR/html5/infrastructure.html#resolve-a-url">resolved URL</a> of the   requested resource.</li>
-            <li>Set <a href="#widl-ServerEntry-metric">metric</a> to the server-specified metric name.</li>
-            <li>Set <a href="#widl-ServerEntry-duration">duration</a> to the server-specified metric value, or value 0.</li>
-            <li>Set <a href="#widl-ServerEntry-duration">description</a> to the server-specified metric description, or an empty string.</li>
-            <li>Set <a href="#widl-ServerEntry-startTime">startTime</a> to the value 0.</li>
-            <li>If the <a>primary buffer</a> is full, discard the <a>PerformanceServerTiming</a> object, created in step 3. Otherwise, add it to the <a>primary buffer</a>  . If adding it causes the <a> primary buffer</a> to become full, fire the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a>   event at the Document.
-              <ol>
-                <li>If the <a href="#widl-Performance-clearServerTimings-void">clearServerTimings</a> method is called in the event handler for the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event, clear all <a>PerformanceServerTiming</a> objects in the <a>primary buffer</a>.</li  >
-                <li>If the <a href="#widl-Performance-setServerTimingBufferSize-void-unsigned-long-maxSize">setServerTimingBufferSize</a> method is called in the event     handler for the <a href="#widl-Performance-onservertimingbufferfull">servertimingbufferfull</a> event,
-                set the maximum size of the <a>primary buffer</a> to the `maxSize` parameter. If the `maxSize` parameter is less than the number of elements currently   stored in the buffer, no elements in the buffer are to be removed.</li>
-              </ol>
-            </li>
-          </ol>
-        </li>
-      </ol>
+### Processing Model
+<ol>
+  <li>Once the <a data-cite="!HTML5#create-a-document-object">Window object of the current document is created</a> the user agent MUST create a <a data-cite="performance-timeline-2#performanceentrylist">`PerformanceEntryList`</a> object (<dfn>primary buffer</dfn>) to store the list of <a>PerformanceServerTiming</a> resources.</li>
+  <li>Set the <a>primary buffer</a> to a size of 150, unless otherwise specified by the user agent or set by the <a>setServerTimingBufferSize</a> method.</li>
+  <li>For each server-specified metric received via the <a>Server-Timing header field</a> perform the following steps:
+    <ol data-link-for="ServerEntry">
+      <li id="step-create-object">Create a new <a>PerformanceServerTiming</a> object and set <a>entryType</a> to the DOMString `server`.</li>
+      <li>Set the <a>name</a> to the <a data-cite="!HTML5#resolve-a-url">resolved URL</a> of the requested resource.</li>
+      <li>Set <a>metric</a> to the server-specified metric name.</li>
+      <li>Set <a>duration</a> to the server-specified metric value, or value 0.</li>
+      <li>Set <a>description</a> to the server-specified metric description, or an empty string.</li>
+      <li>Set <a>startTime</a> to the value 0.</li>
+      <li>If the <a>primary buffer</a> is full, discard the <a>PerformanceServerTiming</a> object, created in step 3. Otherwise, add it to the <a>primary buffer</a>  . If adding it causes the <a> primary buffer</a> to become full, fire the <a>servertimingbufferfull</a>   event at the Document.
+        <ol>
+          <li>If the <a>clearServerTimings</a> method is called in the event handler for the <a>servertimingbufferfull</a> event, clear all <a>PerformanceServerTiming</a> objects in the <a>primary buffer</a>.</li  >
+          <li>If the <a>setServerTimingBufferSize</a> method is called in the event handler for the <a>servertimingbufferfull</a> event,
+          set the maximum size of the <a>primary buffer</a> to the `maxSize` parameter. If the `maxSize` parameter is less than the number of elements currently   stored in the buffer, no elements in the buffer are to be removed.</li>
+        </ol>
+      </li>
+    </ol>
+  </li>
+</ol>
 
-      <p>The user-agent MUST process <a>Server-Timing header field</a> communicated via a trailer field (see [[!RFC7230]] section 4.1.2) using the same algorithm.</p>
-    </section>
+The user-agent MUST process <a>Server-Timing header field</a> communicated via a trailer field (see [[!RFC7230]] section 4.1.2) using the same algorithm.</p>
 
-    <section>
-      <h2>Cross-origin Resources</h2>
-      <p>Cross-origin resources (i.e. non <a href="https://tools.ietf.org/html/rfc6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a href="http://www.w3.org/TR/performance-timeline-2/#sec-performance-timeline">Performance Timeline</a>. If the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING]], fails for a cross-origin resource:</p>
+### Cross-origin Resources
+Cross-origin resources (i.e. non <a data-cite="!rfc6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a data-cite="performance-timeline-2#sec-performance-timeline">Performance Timeline</a>. If the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING]], fails for a cross-origin resource:
 
-      <ul>
-        <li>The <a href="#widl-ServerEntry-duration">duration</a> MUST be set to value 0.</li>
-        <li>The <a href="#widl-ServerEntry-duration">description</a> MUST be set to an empty string.</li>
-      </ul>
+<ul data-link-for="ServerEntry">
+  <li>The <a>duration</a> MUST be set to value 0.</li>
+  <li>The <a>description</a> MUST be set to an empty string.</li>
+</ul>
 
-      <p>Server must return the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], to allow the user agent to fully expose, to the document origin(s) specified, the values of attributes that would have been set to zero or empty string due to the cross-origin restrictions.</p>
-    </section>
-  </section>
+Server must return the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], to allow the user agent to fully expose, to the document origin(s) specified, the values of attributes that would have been set to zero or empty string due to the cross-origin restrictions.
 
-  <section class='informative'>
-    <h2>Privacy and Security</h2>
+<section class='informative'>
+  ## Privacy and Security
 
-    <p>The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `ServerTiming` interface is restricted by the <a href="http://www.w3.org/TR/html5/browsers.html#same-origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[!RESOURCE-TIMING]], that species the domains that are allowed to access the server metrics.</p>
+  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `ServerTiming` interface is restricted by the <a data-cite="!HTML5#same-origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[!RESOURCE-TIMING]], that species the domains that are allowed to access the server metrics.
 
-    <p>In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.</p>
-  </section>
+  In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.
+</section>
 
-  <section>
-    <h2>IANA Considerations</h2>
-    <p>The permanent message header field registry  should be updated with the following registrations ([[RFC3864]]):</p>
+## IANA Considerations
+The permanent message header field registry should be updated with the following registrations ([[RFC3864]]):
 
-    <section>
-      <h2>Server-Timing</h2>
-      <dl>
-        <dt>Header field name</dt>
-        <dd>Server-Timing</dd>
-        <dt>Applicable protocol</dt>
-        <dd>http</dd>
-        <dt>Status</dt>
-        <dd>standard</dd>
-        <dt>Author/Change controller</dt>
-        <dd>W3C</dd>
-        <dt>Specification document</dt><dd>This specification (See <a>Server Timing</a> Header Field)</dd>
-      </dl>
-    </section>
-  </section>
+### Server-Timing
+<dl>
+  <dt>Header field name</dt>
+  <dd>Server-Timing</dd>
+  <dt>Applicable protocol</dt>
+  <dd>http</dd>
+  <dt>Status</dt>
+  <dd>standard</dd>
+  <dt>Author/Change controller</dt>
+  <dd>W3C</dd>
+  <dt>Specification document</dt><dd>This specification (See <a>Server Timing</a> Header Field)</dd>
+</dl>
 
-  <section class='appendix informative'>
-    <h2>Examples</h2>
-    <section>
-    <pre class="example">
-> GET /resource HTTP/1.1
-> Host: example.com
+<section class='appendix informative'>
+  ## Examples
 
-&lt; HTTP/1.1 200 OK
-&lt; Server-Timing: miss, db=53, app=47.2;
-&lt; Server-Timing: customView, dc;atl
-&lt; Trailer: Server-Timing
-&lt; (... snip response body ...)
-&lt; Server-Timing: total=123.4
-      </pre>
+  <pre class="example http">
+    > GET /resource HTTP/1.1
+    > Host: example.com
 
-      <table class="parameters">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Value</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>miss</td><td></td><td></td></tr>
-          <tr><td>dc</td><td></td><td>atl</td></tr>
-          <tr><td>db</td><td>53</td><td></td></tr>
-          <tr><td>app</td><td>47.2</td><td>customView</td></tr>
-          <tr><td>total</td><td>123.4</td><td></td></tr>
-        </tbody>
-      </table>
+    &lt; HTTP/1.1 200 OK
+    &lt; Server-Timing: miss, db=53, app=47.2;
+    &lt; Server-Timing: customView, dc;atl
+    &lt; Trailer: Server-Timing
+    &lt; (... snip response body ...)
+    &lt; Server-Timing: total=123.4
+  </pre>
 
-      <p>The above header fields communicates five distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for `example.com/resource` fetch:</p>
+  <table class="parameters">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Value</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>miss</td><td></td><td></td></tr>
+      <tr><td>dc</td><td></td><td>atl</td></tr>
+      <tr><td>db</td><td>53</td><td></td></tr>
+      <tr><td>app</td><td>47.2</td><td>customView</td></tr>
+      <tr><td>total</td><td>123.4</td><td></td></tr>
+    </tbody>
+  </table>
 
-      <ol>
-        <li>There was a cache miss.</li>
-        <li>The request was routed through the "atl" datacenter ("dc").</li>
-        <li>The database ("db") time was 53 ms.</li>
-        <li>The application server ("app") took 47.2ms to process "customView" template or function.</li>
-        <li>The total time for the request-response cycle on the server was 123.4ms, which is recorded at the end of the response and delivered via a trailer field.</li>
-      </ol>
+  The above header fields communicates five distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for `example.com/resource` fetch:
 
-      <p>The application can collect, process, and act on the provided metrics via the provided JavaScript interface:</p>
+    * There was a cache miss.
+    * The request was routed through the "atl" datacenter ("dc").
+    * The database ("db") time was 53 ms.
+    * The application server ("app") took 47.2ms to process "customView" template or function.
+    * The total time for the request-response cycle on the server was 123.4ms, which is recorded at the end of the response and delivered via a trailer field.
 
-      <pre class="example highlight">
-      var serverMetrics = window.performance.getEntriesByName('https://example.com/resource.jpg');
-      for (i = 0; i &lt; serverMetrics.length; i++) {
-          entry = serverMetrics[i];
-          if (entry == "server") {
-                  // entry.metric, entry.duration, entry.description
-          }
-      }
-      </pre>
-    </section>
-  </section>
+  The application can collect, process, and act on the provided metrics via the provided JavaScript interface:
 
-  <section class='appendix informative'>
-    <h2>Use cases</h2>
+  <pre class="example js">
+  window.performance
+    .getEntriesByName('https://example.com/resource.jpg')
+    .filter(({ name }) => name === "server")
+    .forEach(processServerEntry);
+  </pre>
+</section>
+<section class='appendix informative'>
+  ## Use cases
 
-    <section>
-      <h2>Server timing in developer tools</h2>
-      <p>Server processing time can be a significant fraction of the total request time. For example, a dynamic response may require one or more database queries, cache lookups, API calls, time to process relevant data and render the response, and so on. Similarly, even a static response can be delayed due to overloaded servers, slow caches, or other reasons.</p>
+  ### Server timing in developer tools
+  Server processing time can be a significant fraction of the total request time. For example, a dynamic response may require one or more database queries, cache lookups, API calls, time to process relevant data and render the response, and so on. Similarly, even a static response can be delayed due to overloaded servers, slow caches, or other reasons.
 
-      <p>Today, the user agent developer tools are able to show when the request was initiated, and when the first and last bytes of the response were received. However, there is no visibility into where or how the time was spent on the server, which means that the developer is unable to quickly diagnose if there is a performance bottleneck on the server, and if so, in which component. Today, to answer this question, the developer is required to use different techniques: check the server logs, embed performance data within the response (if possible), use external tools, and so on. This makes identifying and diagnosing performance bottlenecks hard, and in many cases impractical.</p>
+  Today, the user agent developer tools are able to show when the request was initiated, and when the first and last bytes of the response were received. However, there is no visibility into where or how the time was spent on the server, which means that the developer is unable to quickly diagnose if there is a performance bottleneck on the server, and if so, in which component. Today, to answer this question, the developer is required to use different techniques: check the server logs, embed performance data within the response (if possible), use external tools, and so on. This makes identifying and diagnosing performance bottlenecks hard, and in many cases impractical.
 
-      <p>Server Timing defines a standard mechanism that enables the server to communicate relevant performance metrics to the client and allows the client to surface them directly in the developer tools - e.g. the requests can be annotated with server sent metrics to provide insight into where or how the time was spent while generating the response.</p>
-    </section>
+  Server Timing defines a standard mechanism that enables the server to communicate relevant performance metrics to the client and allows the client to surface them directly in the developer tools - e.g. the requests can be annotated with server sent metrics to provide insight into where or how the time was spent while generating the response.
 
-    <section>
-      <h2>Server timing for automated analytics</h2>
-      <p>In addition to surfacing server sent performance metrics in the developer tools, a standard JavaScript interface enables analytics tools to automatically collect, process, beacon, and aggregate these metrics for operational and performance analysis.</p>
-    </section>
+  ### Server timing for automated analytics
+  In addition to surfacing server sent performance metrics in the developer tools, a standard JavaScript interface enables analytics tools to automatically collect, process, beacon, and aggregate these metrics for operational and performance analysis.
 
-    <section>
-      <h2>Measuring request routing performance</h2>
-      <p>Server Timing enables origin servers to communicate performance metrics about where or how time is spent while processing the request. However, the same request and response may also be routed through one or more multiple proxies (e.g. cache servers, load balancers, and so on), each of which may introduce own delays and may want to provide performance metrics into where or how the time is spent.</p>
+  ### Measuring request routing performance
+  Server Timing enables origin servers to communicate performance metrics about where or how time is spent while processing the request. However, the same request and response may also be routed through one or more multiple proxies (e.g. cache servers, load balancers, and so on), each of which may introduce own delays and may want to provide performance metrics into where or how the time is spent.
 
-      <p>For example, a CDN edge node may want to report which data center was being used, if the resource was available in cache, and how long it took to retrieve the response from cache or from the origin server. Further, the same process may be repeated by other proxies, thus allowing full end-to-end visibility into how the request was routed and where the time was spent.</p>
+  For example, a CDN edge node may want to report which data center was being used, if the resource was available in cache, and how long it took to retrieve the response from cache or from the origin server. Further, the same process may be repeated by other proxies, thus allowing full end-to-end visibility into how the request was routed and where the time was spent.
 
-      <p>Similarly, when a Service Worker is active, some or all of the navigation and resource requests may be routed through it. Effectively, an active Service Worker is a local proxy that is able to reroute requests, serve cached responses, synthesize responses, and more. As a result, Server Timing enables Service Worker to report custom performance metrics about how the request was processed: whether it was fetched from server or server from local cache, duration of relevant the processing steps, and so on.</p>
-    </section>
-  </section>
+  Similarly, when a Service Worker is active, some or all of the navigation and resource requests may be routed through it. Effectively, an active Service Worker is a local proxy that is able to reroute requests, serve cached responses, synthesize responses, and more. As a result, Server Timing enables Service Worker to report custom performance metrics about how the request was processed: whether it was fetched from server or server from local cache, duration of relevant the processing steps, and so on.
+</section>
 
-  <section class="appendix">
-    <h2>Acknowledgments</h2>
-    <p>This document reuses text from the [[NAVIGATION-TIMING-2]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE-2]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.</p>
-  </section>
-
-</body>
-</html>
+<section class='appendix informative'>
+  ## Acknowledgments
+  This document reuses text from the [[NAVIGATION-TIMING-2]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE-2]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.
+</section>
