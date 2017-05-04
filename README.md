@@ -6,3 +6,5 @@ This specification introduces `Server Timing`, which enables the server to commu
 * Discuss on [public-webperf](https://www.w3.org/Search/Mail/Public/search?keywords=server-timing&hdr-1-name=subject&hdr-1-query=&index-grp=Public_FULL&index-type=t&type-index=public-web-perf)
 
 Questions, suggestions? Please open an issue or send a pull request!
+
+See also [Web performance README](https://github.com/w3c/web-performance/blob/gh-pages/README.md)
