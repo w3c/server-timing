@@ -105,7 +105,7 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
   Because there can be no guarantee of clock synchronization between client, server, and intermediaries, it is impossible to map a meaningful `startTime` onto the clients timeline. For that reason, any `startTime` attribution is purposely omitted from this specification
 </div>
 
-<section data-dfn-for="PerformanceEntry" data-link-for="PerformanceEntry">
+<section>
   ### The <code><dfn>PerformanceServerTiming</dfn></code> Interface
 
   <dl>
@@ -133,6 +133,7 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
 </dl>
 </section>
 
+<section>
 ### Extension to the <a>PerformanceResourceTiming</a> interface
 
 <pre class='idl'>
@@ -143,11 +144,20 @@ partial interface PerformanceResourceTiming {
 </pre>
 
 <p>The <dfn>serverTiming</dfn> field returns a sequence of <a>PerformanceServerTiming</a> entries.</p>
+</section>
 
+<section>
 ## Process
 
 ### Processing Model
-<p>For each resource <a title='fetch' href="https://fetch.spec.whatwg.org/#concept-fetch">fetched</a> by the current <a href="https://www.w3.org/TR/html5/browsers.html#browsing-context">browsing context</a>, excluding resources fetched by cross-origin stylesheets fetched with <code>no-cors</code> policy, perform the following steps:</p>
+<p>When processing the response of the <a data-cite="navigation-timing-2#current-document">current document</a> call the <a>server-timing header parsing algorithm</a> with <var>resource timing object</var> set to the <a data-cite="navigation-timing-2#step-create-object">newly created</a> `PerformanceNavigationTiming` object.
+</p>
+
+<p>For each resource <a title='fetch' href="https://fetch.spec.whatwg.org/#concept-fetch">fetched</a> by the current <a href="https://www.w3.org/TR/html5/browsers.html#browsing-context">browsing context</a>, excluding resources fetched by cross-origin stylesheets fetched with <code>no-cors</code> policy, call the <a>server-timing header parsing algorithm</a> with <var>resource timing object</var> set to the <a data-cite="resource-timing#step-create-object">newly created</a> `PerformanceResourceTiming` object.
+</p>
+
+#### <dfn>server-timing header parsing algorithm</dfn>
+<p>Given a <var>resource timing object</var>, perform the following steps:</p>
 
 <ol>
   <li>Let <dfn>entryList</dfn> be a new empty <a>Sequence</a>.
@@ -162,8 +172,7 @@ partial interface PerformanceResourceTiming {
       </li>
     </ol>
   </li>
-  <li>On the <a>PerformanceResourceTiming</a> object <a data-cite="!resource-timing#step-create-object">created for the
-    resource</a>, set <a>serverTiming</a> to <var>entryList</var>.
+  <li>Set the <a>serverTiming</a> attribute on <var>resource timing object</var> to <var>entryList</var>.
   </li>
 </ol>
 
@@ -179,6 +188,7 @@ Cross-origin resources (i.e. non <a data-cite="!rfc6454#section-5">same origin</
 </ul>
 
 Server must return the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], to allow the user agent to fully expose, to the document origin(s) specified, the values of attributes that would have been set to zero or empty string due to the cross-origin restrictions.
+</section>
 
 <section class='informative'>
   ## Privacy and Security
