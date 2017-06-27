@@ -43,9 +43,6 @@
     },{
       key: 'Implementation',
       data: [{
-        value: 'Can I use High Resolution Time?',
-        href: 'http://caniuse.com/#feat=high-resolution-time'
-      }, {
         value: 'Test Suite',
         href: 'http://w3c-test.org/server-timing/'
       }, {
@@ -104,42 +101,35 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
   The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.
 </div>
 
+<div class="note">
+  Because there can be no guarantee of clock synchronization between client, server, and intermediaries, it is impossible to map a meaningful `startTime` onto the clients timeline. For that reason, any `startTime` attribution is purposely omitted from this specification
+</div>
+
 <section data-dfn-for="PerformanceEntry" data-link-for="PerformanceEntry">
   ### The <code><dfn>PerformanceServerTiming</dfn></code> Interface
 
-  The <a>PerformanceServerTiming</a> interface participates in the [[!PERFORMANCE-TIMELINE-2]] and redefines the semantics of the following attributes of the <code><dfn data-cite="!performance-timeline-2#dom-performanceentry">PerformanceEntry</dfn></code> interface:
-
   <dl>
-    <dt>`name`</dt>
-    <dd>
-      This attribute MUST return the <a data-cite="!HTML5#resolve-a-url">resolved URL</a> of the requested resource [[!HTML5]]. This attribute MUST NOT change even if the <a data-cite="!HTML5#fetch">fetch</a> redirected to a different URL.
-    </dd>
-    <dt>`entryType`</dt>
-    <dd>This attribute MUST return the DOMString "`server`".</dd>
-    <dt>`startTime`</dt>
-    <dd>This attribute MUST return value 0. Because there can be no guarantee of clock synchronization between client, server, and intermediaries, it is impossible to map a meaningful `startTime` onto the clients timeline.</dd>
-    <dt>`duration`</dt>
-    <dd>
-      This attribute MUST return a number that contains the server-specified metric value, or value 0.
-    </dd>
+    <dt><code>metric</code></dt>
+    <dd>The <code>metric</code> attribute MUST return the server-specified metric-name.</dd>
+    <dt><code>value</code></dt>
+    <dd>The <code>value</code> attribute MUST return a double that contains the server-specified metric-value, or value 0.</dd>
+    <dt><code>description</code></dt>
+    <dd>The <code>description</code> attribute MUST return the server-specified metric-description, or an empty string.</dd>
+    <dt><code>serializer</code></dt>
+    <dd>See [[!WebIDL]] for serializer behavior of <a data-cte="WebIDL-LS#attribute">`attribute`</a>.</dd>
   </dl>
 
   <pre class='idl'>
     [Exposed=(Window,Worker)]
-    interface PerformanceServerTiming : PerformanceEntry {
+    interface PerformanceServerTiming {
       readonly attribute DOMString metric;
+      readonly attribute double value;
       readonly attribute DOMString description;
-      serializer = { inherit, attribute };
+      serializer = { attribute };
     };
   </pre>
 
 <dl>
-  <dt><dfn>metric</dfn> attribute</dt>
-  <dd>This attribute MUST return the server-specified metric name.</dd>
-  <dt><dfn>description</dfn> attribute</dt>
-  <dd>This attribute MUST return the server-specified metric description, or an empty string.</dd>
-  <dt><dfn>serializer</dfn></dt>
-  <dd>See [[!WebIDL]] for serializer behavior of <a data-cte="WebIDL-LS#inherit">`inherit`</a> and <a data-cte="WebIDL-LS#attribute">`attribute`</a>.</dd>
 </dl>
 </section>
 
@@ -162,15 +152,12 @@ partial interface PerformanceResourceTiming {
 <ol>
   <li>Let <dfn>entryList</dfn> be a new empty <a>Sequence</a>.
   </li>
-  <li>For each server-specified metric received via the <a>Server-Timing header field</a> perform the following steps:
+  <li>For each server-specified metric received from parsing the <a>Server-Timing header field</a>, perform the following steps:
     <ol data-link-for="PerformanceServerTiming">
-      <li id="step-create-object">Let <dfn>entry</dfn> be a new <a>PerformanceServerTiming</a>.</li>
-      <li>Set <a>entryType</a> to the DOMString "`server`".</li>
-      <li>Set <a>name</a> to the <a data-cite="!HTML5#resolve-a-url">resolved URL</a> of the requested resource.</li>
-      <li>Set <a>metric</a> to the server-specified metric name.</li>
-      <li>Set <a>duration</a> to the server-specified metric value, or value 0 if omitted or not representable as a double.</li>
-      <li>Set <a>description</a> to the server-specified metric description, or an empty string.</li>
-      <li>Set <a>startTime</a> to the value 0.</li>
+      <li>Let <dfn>entry</dfn> be a new <a>PerformanceServerTiming</a> object.</li>
+      <li>Set <a>metric</a> to the server-specified metric-name.</li>
+      <li>Set <a>value</a> to the server-specified metric-value, or value 0 if omitted or not representable as a double.</li>
+      <li>Set <a>description</a> to the server-specified metric-description, or an empty string.</li>
       <li>Append <var>entry</var> to <var>entryList</var>.
       </li>
     </ol>
@@ -180,13 +167,14 @@ partial interface PerformanceResourceTiming {
   </li>
 </ol>
 
+<!-- TODO(cvazac) Should this be a MUST? -->
 <p>The user-agent MUST process <a>Server-Timing header field</a> communicated via a trailer field (see [[!RFC7230]] section 4.1.2) using the same algorithm.</p>
 
 ### Cross-origin Resources
 Cross-origin resources (i.e. non <a data-cite="!rfc6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a data-cite="performance-timeline-2#sec-performance-timeline">Performance Timeline</a>. If the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING]], fails for a cross-origin resource:
 
 <ul data-link-for="PerformanceServerTiming">
-  <li>The <a>duration</a> MUST be set to value 0.</li>
+  <li>The <a>value</a> MUST be set to value 0.</li>
   <li>The <a>description</a> MUST be set to an empty string.</li>
 </ul>
 
@@ -249,7 +237,7 @@ The permanent message header field registry should be updated with the following
     </tbody>
   </table>
 
-  <p>The above header fields communicates five distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for `example.com/resource.jpg` fetch:</p>
+  <p>The above header fields communicate five distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for `example.com/resource.jpg` fetch:</p>
 
   <ol>
     <li>There was a cache miss.</li>
@@ -263,9 +251,11 @@ The permanent message header field registry should be updated with the following
 
   <pre class="example js">
   window.performance
-    .getEntriesByName('https://example.com/resource.jpg')
-    .filter(({ entryType }) => entryType === 'server')
-    .forEach(processServerEntry);
+    .getEntriesByName('https://example.com/resource.jpg', 'resource')
+    .serverTiming
+    .forEach(function({name, value, description}) {
+      // process server-timing entry
+    });
   </pre>
 </section>
 <section class='appendix informative'>
