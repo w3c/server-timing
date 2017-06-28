@@ -74,7 +74,7 @@
 
 Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[!NAVIGATION-TIMING-2]] and [[!RESOURCE-TIMING-2]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
 
-This specification introduces <a>Server Timing</a>, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
+This specification introduces <a>PerformanceServerTiming</a> interface, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
 </section>
 
 ### The `Server-Timing` Header Field
@@ -111,19 +111,8 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
   Because there can be no guarantee of clock synchronization between client, server, and intermediaries, it is impossible to map a meaningful `startTime` onto the clients timeline. For that reason, any `startTime` attribution is purposely omitted from this specification
 </div>
 
-<section>
-  ### The <code><dfn>PerformanceServerTiming</dfn></code> Interface
-
-  <dl>
-    <dt><code>metric</code></dt>
-    <dd>The <code>metric</code> attribute MUST return the server-specified metric-name.</dd>
-    <dt><code>value</code></dt>
-    <dd>The <code>value</code> attribute MUST return a double that contains the server-specified metric-value, or value 0.0.</dd>
-    <dt><code>description</code></dt>
-    <dd>The <code>description</code> attribute MUST return the server-specified metric-description, or an empty string.</dd>
-    <dt><code>serializer</code></dt>
-    <dd>See [[!WebIDL]] for serializer behavior of <a data-cte="WebIDL-LS#attribute">`attribute`</a>.</dd>
-  </dl>
+<section data-dfn-for="PerformanceServerTiming">
+  ## The <code><dfn>PerformanceServerTiming</dfn></code> Interface
 
   <pre class='idl'>
     [Exposed=(Window,Worker)]
@@ -131,25 +120,35 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
       readonly attribute DOMString metric;
       readonly attribute double value;
       readonly attribute DOMString description;
-      serializer = { attribute };
+      [Default] object toJSON();
     };
   </pre>
 
-<dl>
-</dl>
+  When <dfn>toJSON</dfn> is called, run [[!WEBIDL]]'s <a data-cite="WEBIDL#default-tojson-operation">default toJSON operation</a>.
+
+  ### <dfn>metric</dfn> attribute
+  The <code>metric</code> attribute MUST return the server-specified metric-name.
+
+  ### <dfn>value</dfn> attribute
+  The <code>value</code> attribute MUST return a double that contains the server-specified metric-value, or value `0.0`.
+
+  ### <dfn>description</dfn> attribute
+  The <code>description</code> attribute MUST return the server-specified metric-description, or an empty string.
 </section>
 
-<section>
-### Extension to the <a>PerformanceResourceTiming</a> interface
+<!-- TODO: How do extend and cross-reference the interface? -->
+<section data-dfn-for="PerformanceResourceTiming">
+  ### Extension to the <a>PerformanceResourceTiming</a> interface
 
-<pre class='idl'>
-[Exposed=(Window,Worker)]
-partial interface PerformanceResourceTiming {
-  readonly attribute FrozenArray&lt;PerformanceServerTiming&gt; serverTiming;
-};
-</pre>
+  <pre class='idl'>
+  [Exposed=(Window,Worker)]
+  partial interface PerformanceResourceTiming {
+    readonly attribute FrozenArray&lt;PerformanceServerTiming&gt; serverTiming;
+  };
+  </pre>
 
-<p>The <dfn>serverTiming</dfn> field returns a sequence of <a>PerformanceServerTiming</a> entries.</p>
+  ### <dfn>serverTiming</dfn> attribute
+  The <code>serverTiming</code> attribute returns a sequence of <a>PerformanceServerTiming</a> entries.
 </section>
 
 <section>
@@ -166,7 +165,7 @@ partial interface PerformanceResourceTiming {
 <p>Given a <var>resource timing object</var>, perform the following steps:</p>
 
 <ol>
-  <li>Let <dfn>entryList</dfn> be a new empty <a>Sequence</a>.
+  <li>Let <dfn>entryList</dfn> be a new empty <a data-cite="WEBIDL#sequence">sequence</a>.
   </li>
   <li>For each server-specified metric received from parsing the <a>Server-Timing header field</a>, perform the following steps:
     <ol data-link-for="PerformanceServerTiming">
@@ -178,7 +177,7 @@ partial interface PerformanceResourceTiming {
       </li>
     </ol>
   </li>
-  <li>Set the <a>serverTiming</a> attribute on <var>resource timing object</var> to <var>entryList</var>.
+  <li>Set the <a data-link-for="PerformanceResourceTiming">serverTiming</a> attribute on <var>resource timing object</var> to <var>entryList</var>.
   </li>
 </ol>
 
@@ -199,26 +198,29 @@ Server must return the `Timing-Allow-Origin` HTTP response header, as defined in
 <section class='informative'>
   ## Privacy and Security
 
-  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `ServerTiming` interface is restricted by the <a data-cite="!HTML5#same-origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[!RESOURCE-TIMING-2]], that species the domains that are allowed to access the server metrics.
+  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the <a data-cite="!HTML5#same-origin">same origin</a> policy by default, as described in <a href="#cross-origin-resources"></a>. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[!RESOURCE-TIMING-2]], that species the domains that are allowed to access the server metrics.
 
   In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.
 </section>
 
-## IANA Considerations
-The permanent message header field registry should be updated with the following registrations ([[RFC3864]]):
+<section>
+  ## IANA Considerations
+  The permanent message header field registry should be updated with the following registrations ([[RFC3864]]):
 
-### Server-Timing
-<dl>
-  <dt>Header field name</dt>
-  <dd>Server-Timing</dd>
-  <dt>Applicable protocol</dt>
-  <dd>http</dd>
-  <dt>Status</dt>
-  <dd>standard</dd>
-  <dt>Author/Change controller</dt>
-  <dd>W3C</dd>
-  <dt>Specification document</dt><dd>This specification (See <a>Server Timing</a> Header Field)</dd>
-</dl>
+  ### Server-Timing Header Field
+  <dl>
+    <dt>Header field name</dt>
+    <dd>Server-Timing</dd>
+    <dt>Applicable protocol</dt>
+    <dd>http</dd>
+    <dt>Status</dt>
+    <dd>standard</dd>
+    <dt>Author/Change controller</dt>
+    <dd>W3C</dd>
+    <dt>Specification document</dt>
+    <dd>This specification (See <a>Server-Timing Header Field</a>)</dd>
+  </dl>
+</section>
 
 <section class='appendix informative'>
   ## Examples
