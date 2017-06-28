@@ -100,15 +100,11 @@ The <dfn>Server-Timing header field</dfn> is used to communicate one or more met
 See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`.
 
 <div class="note">
-  To minimize the HTTP overhead the provided metrics and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
-</div>
+  - To minimize the HTTP overhead the provided metrics and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
 
-<div class="note">
-  The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.
-</div>
+  - Because there can be no guarantee of clock synchronization between client, server, and intermediaries, it is impossible to map a meaningful `startTime` onto the clients timeline. For that reason, any `startTime` attribution is purposely omitted from this specification. If the developers want to establish a relationship between multiple entries, they can do so by communicating custom data via metric names and/or descriptions.
 
-<div class="note">
-  Because there can be no guarantee of clock synchronization between client, server, and intermediaries, it is impossible to map a meaningful `startTime` onto the clients timeline. For that reason, any `startTime` attribution is purposely omitted from this specification
+  - The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.
 </div>
 
 <section data-dfn-for="PerformanceServerTiming">
