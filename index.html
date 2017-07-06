@@ -95,8 +95,8 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
   - The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.
 </div>
 
-<section data-dfn-for="PerformanceServerTiming">
-  ## The <code><dfn>PerformanceServerTiming</dfn></code> Interface
+<section data-dfn-for="PerformanceServerTiming" data-link-for="PerformanceServerTiming">
+  ## The <dfn>PerformanceServerTiming</dfn> Interface
 
   <pre class='idl'>
     [Exposed=(Window,Worker)]
@@ -111,17 +111,17 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
   When <dfn>toJSON</dfn> is called, run [[!WEBIDL]]'s <a data-cite="WEBIDL#default-tojson-operation">default toJSON operation</a>.
 
   ### <dfn>metric</dfn> attribute
-  The <code>metric</code> attribute MUST return the server-specified metric-name.
+  The <a>metric</a> attribute MUST return the server-specified metric-name.
 
   ### <dfn>value</dfn> attribute
-  The <code>value</code> attribute MUST return a double that contains the server-specified metric-value, or value `0.0`.
+  The <a>value</a> attribute MUST return a double that contains the server-specified metric-value, or value `0.0`.
 
   ### <dfn>description</dfn> attribute
-  The <code>description</code> attribute MUST return the server-specified metric-description, or an empty string.
+  The <a>description</a> attribute MUST return the server-specified metric-description, or an empty string.
 </section>
 
 <!-- TODO: How do extend and cross-reference the interface? -->
-<section data-dfn-for="PerformanceResourceTiming">
+<section data-dfn-for="PerformanceResourceTiming" data-link-for="PerformanceResourceTiming">
   ### Extension to the <a>PerformanceResourceTiming</a> interface
 
   The <dfn data-cite="RESOURCE-TIMING-2#performanceresourcetiming">PerformanceResourceTiming</dfn> interface, which this specification partially extends, is defined in [[!RESOURCE-TIMING-2]].
@@ -134,7 +134,7 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
   </pre>
 
   ### <dfn>serverTiming</dfn> attribute
-  The <code>serverTiming</code> attribute returns a sequence of <a>PerformanceServerTiming</a> entries.
+  The <a>serverTiming</a> attribute returns a sequence of <a>PerformanceServerTiming</a> entries.
 </section>
 
 <section>
@@ -163,7 +163,7 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
       </li>
     </ol>
   </li>
-  <li>Set the <a data-link-for="PerformanceResourceTiming">serverTiming</a> attribute on <var>resource timing object</var> to <var>entryList</var>.
+  <li>Set the <a data-lt="PerformanceResourceTiming.serverTiming">serverTiming</a> attribute on <var>resource timing object</var> to <var>entryList</var>.
   </li>
 </ol>
 
