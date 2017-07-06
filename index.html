@@ -28,19 +28,8 @@
     subjectPrefix: "[server-timing]",
     license: 'w3c-software-doc',
     format: "markdown",
+    github: "https://github.com/w3c/server-timing/",
     otherLinks: [{
-      key: 'Repository',
-      data: [{
-        value: 'We are on Github.',
-        href: 'https://github.com/w3c/server-timing/'
-      }, {
-        value: 'File a bug.',
-        href: 'https://github.com/w3c/server-timing/issues'
-      }, {
-        value: 'Commit history.',
-        href: 'https://github.com/w3c/server-timing/commits/gh-pages/index.html'
-      }]
-    },{
       key: 'Mailing list',
       data: [{
         value: 'public-web-perf@w3.org',
@@ -135,6 +124,8 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
 <section data-dfn-for="PerformanceResourceTiming">
   ### Extension to the <a>PerformanceResourceTiming</a> interface
 
+  The <dfn data-cite="RESOURCE-TIMING-2#performanceresourcetiming">PerformanceResourceTiming</dfn> interface, which this specification partially extends, is defined in [[!RESOURCE-TIMING-2]].
+
   <pre class='idl'>
   [Exposed=(Window,Worker)]
   partial interface PerformanceResourceTiming {
@@ -153,7 +144,7 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
 <p>When processing the response of the <a data-cite="NAVIGATION-TIMING-2#current-document">current document</a> call the <a>server-timing header parsing algorithm</a> with <var>resource timing object</var> set to the <a data-cite="NAVIGATION-TIMING-2#step-create-object">newly created</a> `PerformanceNavigationTiming` object.
 </p>
 
-<p>For each resource <a title='fetch' href="https://fetch.spec.whatwg.org/#concept-fetch">fetched</a> by the current <a href="https://www.w3.org/TR/html5/browsers.html#browsing-context">browsing context</a>, excluding resources fetched by cross-origin stylesheets fetched with <code>no-cors</code> policy, call the <a>server-timing header parsing algorithm</a> with <var>resource timing object</var> set to the <a data-cite="RESOURCE-TIMING-2#step-create-object">newly created</a> `PerformanceResourceTiming` object.
+<p>For each resource <a data-cite="FETCH#concept-fetch">fetched</a> by the current <a href="https://www.w3.org/TR/html5/browsers.html#browsing-context">browsing context</a>, excluding resources fetched by cross-origin stylesheets fetched with <code>no-cors</code> policy, call the <a>server-timing header parsing algorithm</a> with <var>resource timing object</var> set to the <a data-cite="RESOURCE-TIMING-2#step-create-object">newly created</a> <a>PerformanceResourceTiming</a> object.
 </p>
 
 #### <dfn>server-timing header parsing algorithm</dfn>
