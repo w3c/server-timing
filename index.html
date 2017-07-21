@@ -102,7 +102,7 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
     [Exposed=(Window,Worker)]
     interface PerformanceServerTiming {
       readonly attribute DOMString metric;
-      readonly attribute double value;
+      readonly attribute DOMHighResTimestamp value;
       readonly attribute DOMString description;
       [Default] object toJSON();
     };
