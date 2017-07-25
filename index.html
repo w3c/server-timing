@@ -101,8 +101,8 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
   <pre class='idl'>
     [Exposed=(Window,Worker)]
     interface PerformanceServerTiming {
-      readonly attribute DOMString metric;
-      readonly attribute double value;
+      readonly attribute DOMString name;
+      readonly attribute DOMHighResTimestamp duration;
       readonly attribute DOMString description;
       [Default] object toJSON();
     };
@@ -110,11 +110,11 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
 
   When <dfn>toJSON</dfn> is called, run [[!WEBIDL]]'s <a data-cite="WEBIDL#default-tojson-operation">default toJSON operation</a>.
 
-  ### <dfn>metric</dfn> attribute
-  The <a>metric</a> attribute MUST return the server-specified metric-name.
+  ### <dfn>name</dfn> attribute
+  The <a>name</a> attribute MUST return the server-specified metric-name.
 
-  ### <dfn>value</dfn> attribute
-  The <a>value</a> attribute MUST return a double that contains the server-specified metric-value, or value `0.0`.
+  ### <dfn>duration</dfn> attribute
+  The <a>duration</a> attribute MUST return a double that contains the server-specified metric-value, or value `0.0`.
 
   ### <dfn>description</dfn> attribute
   The <a>description</a> attribute MUST return the server-specified metric-description, or an empty string.
@@ -156,8 +156,8 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
   <li>For each server-specified metric received from parsing the <a>Server-Timing header field</a>, perform the following steps:
     <ol data-link-for="PerformanceServerTiming">
       <li>Let <dfn>entry</dfn> be a new <a>PerformanceServerTiming</a> object.</li>
-      <li>Set <a>metric</a> to the server-specified metric-name.</li>
-      <li>Set <a>value</a> to the server-specified metric-value, or value 0 if omitted or not representable as a double.</li>
+      <li>Set <a>name</a> to the server-specified metric-name.</li>
+      <li>Set <a>duration</a> to the server-specified metric-value, or value 0 if omitted or not representable as a double.</li>
       <li>Set <a>description</a> to the server-specified metric-description, or an empty string.</li>
       <li>Append <var>entry</var> to <var>entryList</var>.
       </li>
@@ -174,7 +174,7 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
 Cross-origin resources (i.e. non <a data-cite="!RFC6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a data-cite="!PERFORMANCE-TIMELINE-2#sec-performance-timeline">Performance Timeline</a>. If the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING-2]], fails for a cross-origin resource:
 
 <ul data-link-for="PerformanceServerTiming">
-  <li>The <a>value</a> MUST be set to value 0.</li>
+  <li>The <a>duration</a> MUST be set to value 0.</li>
   <li>The <a>description</a> MUST be set to an empty string.</li>
 </ul>
 
@@ -262,9 +262,9 @@ Server must return the `Timing-Allow-Origin` HTTP response header, as defined in
 
     serverEntries
       // we only care about "slow" ones
-      filter({ value }  => value > 2.0)
+      filter({ duration }  => duration > 2.0)
       // process just the attributes we are interested in
-      .forEach(({ name, value, description }) => {
+      .forEach(({ name, duration, description }) => {
         // ...
       });
 
