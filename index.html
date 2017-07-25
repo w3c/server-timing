@@ -255,21 +255,16 @@ Server must return the `Timing-Allow-Origin` HTTP response header, as defined in
 
   <pre class="example js">
     // Gather server timing for a particular resource
-    const serverTimings = window.performance
-      .getEntriesByName("https://example.com/resource.jpg", "resource")
-      // Get just the serverTiming array
-      .map(({ serverTiming }) => serverTiming);
-
-    serverEntries
-      // we only care about "slow" ones
-      filter({ duration }  => duration > 2.0)
-      // process just the attributes we are interested in
-      .forEach(({ name, duration, description }) => {
-        // ...
-      });
-
-    // Aternatively, we convert each into JSON
-    const entriesAsJson = serverEntries.map(entry => entry.toJSON());
+    window.performance
+      .getEntriesByName("https://example.com/resource.jpg", "resource")[0]
+      // Iterate over the serverTiming array
+      .serverTiming
+      .forEach({name, duration, description} => {
+        // we only care about "slow" ones
+        if (duration > 200) {
+          // ...
+        }
+      })
   </pre>
 </section>
 <section class='appendix informative'>
