@@ -254,16 +254,17 @@ Server must return the `Timing-Allow-Origin` HTTP response header, as defined in
   <p>The application can collect, process, and act on the provided metrics via the provided JavaScript interface:</p>
 
   <pre class="example js">
-    // Gather server timing for a particular resource
-    window.performance
-      .getEntriesByName("https://example.com/resource.jpg", "resource")[0]
-      // Iterate over the serverTiming array
-      .serverTiming
-      .forEach({name, duration, description} => {
-        // we only care about "slow" ones
-        if (duration > 200) {
-          // ...
-        }
+    // serverTiming entries can live on 'navigation' and 'resource' entries
+    window.performance.getEntries()
+      // iterate over all entries
+      .forEach({name: url, entryType, serverTiming} => {
+        // iterate over the serverTiming array
+        (serverTiming || []).forEach({name, duration, description} => {
+          // we only care about "slow" ones
+          if (duration > 200) {
+            console.warn('Slow!', url, entryType, name, duration, description)
+          }
+        })
       })
   </pre>
 </section>
