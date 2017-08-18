@@ -255,19 +255,18 @@ Server must return the `Timing-Allow-Origin` HTTP response header, as defined in
 
   <pre class="example js">
     // serverTiming entries can live on 'navigation' and 'resource' entries
-    ['navigation', 'resource']
-      .forEach(function(entryType) {
-        performance.getEntriesByType(entryType).forEach(function({name: url, serverTiming}) {
-          // iterate over the serverTiming array
-          serverTiming.forEach(function({name, duration, description}) {
-            // we only care about "slow" ones
-            if (duration > 200) {
-              console.info('Slow server-timing entry =',
-                JSON.stringify({url, entryType, name, duration, description}, null, 2))
-            }
-          })
-        })
-    })
+    for (const entryType of ['navigation', 'resource']) {
+      for (const {name: url, serverTiming} of performance.getEntriesByType(entryType)) {
+        // iterate over the serverTiming array
+        for (const {name, duration, description} of serverTiming) {
+          // we only care about "slow" ones
+          if (duration > 200) {
+            console.info('Slow server-timing entry =',
+              JSON.stringify({url, entryType, name, duration, description}, null, 2))
+          }
+        }
+      }
+    }
   </pre>
 </section>
 <section class='appendix informative'>
