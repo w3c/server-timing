@@ -1,16 +1,16 @@
 # Server Timing Explained
 
 ## What's All This About?
-Server Timing allows developers to monitor the performance of server-handling of requests of every resource that makes up a page by overloading Navigation (for the base HTML) and Resource Timing (for scripts, images, etc). This new API enables developers to have insight into performance bottlenecks of the `Request` block below, that is, after `requestStart` and before `responseStart`.
+Server Timing allows developers to monitor the performance of server-handling of requests of every resource that makes up a page by extending the Navigation Timing and Resource Timing APIs. The new attributes exposed by Server Timing enable developers to have insight into performance bottlenecks of the `Request` block below, that is, after `requestStart` and before `responseStart`.
  
 ![navigation timing image](./nav-timing.png)
 
-Adhering to a standard response header format gives developer tools the ability to visualize backend timers that the developer (or intermediate proxies) deem important. The Javascript API gives analytics vendors the ability to collect and beacon more detailed timing data about each request. 
+Adhering to a response header format defined by this specification gives developer tools the ability to visualize backend timers that the developer (or intermediate proxies) deem important. The Javascript API gives analytics vendors the ability to collect and beacon more detailed timing data about each request. 
 
 ### Goals
 The goal of this API is the standardization of the following:
 * a response-header format
-* the relationship between server timing data and other RUM APIs (Navigation and Resource Timing)
+* the relationship between server timing data and the Navigation and Resource Timing APIs
 
 ### Non-goals
 It is _not_ the goal of this API to communicate arbitrary payloads of structured data to the browser. 
@@ -47,7 +47,7 @@ for (const entryType of ['navigation', 'resource']) {
 }
 ```
 
-## "_Controversial_" decisions 
+## Considered alternatives
 
 ### Explicitly named metadata parameters:
 There was [some discussion](https://github.com/w3c/server-timing/issues/12) about defining the `description` parameter as an explicitly named parameter. But as this API is intended to be as lightweight as possible, we've [suggested](https://github.com/w3c/server-timing/issues/22#issuecomment-317123400) [alternatives](https://github.com/w3c/server-timing/issues/12#issuecomment-317876891). 
