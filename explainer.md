@@ -15,7 +15,7 @@ The goal of this API is the standardization of the following:
 ### Non-goals
 It is _not_ the goal of this API to communicate arbitrary payloads of structured data to the browser. 
 
-It is _not_ the goal of the API to provide a mechanism which relies on clock synchronization (between client, server, or any intermediaries), like providing `startTime`. More [here](https://github.com/w3c/server-timing/issues/10#issuecomment-282442919).
+It is _not_ the goal of the API to provide a mechanism which relies on clock synchronization (between client, server, or any intermediaries), like providing `startTime`. More discussion [here](https://github.com/w3c/server-timing/issues/10#issuecomment-282442919).
 
 It is _not_ the goal of the API to [distinguish](https://github.com/w3c/server-timing/issues/13) between cached responses and those served by the origin. 
 
@@ -50,10 +50,7 @@ for (const entryType of ['navigation', 'resource']) {
 ## Considered alternatives
 
 ### Explicitly named metadata parameters:
-There was [some discussion](https://github.com/w3c/server-timing/issues/12) about defining the `description` parameter as an explicitly named parameter. But as this API is intended to be as lightweight as possible, we've [suggested](https://github.com/w3c/server-timing/issues/22#issuecomment-317123400) [alternatives](https://github.com/w3c/server-timing/issues/12#issuecomment-317876891). 
-
-### `duration` with no `startTime`? [wtf](https://github.com/w3c/server-timing/issues/10)?
-"ST is not a general purpose tracing framework." - @igrigorik
+There was [some discussion](https://github.com/w3c/server-timing/issues/12) about defining `description` as an explicitly named parameter. We investigated alternatives and decided to keep the format simple and more lightweight, to align with original design goals of the API. 
 
 ## References & acknowledgements
 @yoavweiss, @igrigorik
