@@ -67,10 +67,10 @@ This specification introduces <a>PerformanceServerTiming</a> interface, which en
 
 ### The `Server-Timing` Header Field
 
-The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) syntax for the <a>Server-Timing header field</a> is as follows:
+The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[!RFC5234]] syntax for the <a>Server-Timing header field</a> is as follows:
 
 ```ABNF
-  Server-Timing        = "Server-Timing" ":" #server-timing-metric
+  Server-Timing        = #server-timing-metric
   server-timing-metric = metric  [ OWS ";" OWS description ]
   metric               = metric-name [ OWS "=" OWS metric-value ]
   metric-name          = token
@@ -85,7 +85,7 @@ The <dfn>Server-Timing header field</dfn> is used to communicate one or more met
 * Each metric MAY have an optional description.
 * The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.
 
-See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`.
+See [[!RFC7230]] for definitions of `#`, `OWS`, `token`, `DIGIT`, and `quoted-string`.
 
 <div class="note">
   - To minimize the HTTP overhead the provided metrics and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
@@ -102,7 +102,7 @@ See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`
     [Exposed=(Window,Worker)]
     interface PerformanceServerTiming {
       readonly attribute DOMString name;
-      readonly attribute DOMHighResTimestamp duration;
+      readonly attribute DOMHighResTimeStamp duration;
       readonly attribute DOMString description;
       [Default] object toJSON();
     };
@@ -287,7 +287,7 @@ Server must return the `Timing-Allow-Origin` HTTP response header, as defined in
 
   For example, a CDN edge node may want to report which data center was being used, if the resource was available in cache, and how long it took to retrieve the response from cache or from the origin server. Further, the same process may be repeated by other proxies, thus allowing full end-to-end visibility into how the request was routed and where the time was spent.
 
-  Similarly, when a Service Worker is active, some or all of the navigation and resource requests may be routed through it. Effectively, an active Service Worker is a local proxy that is able to reroute requests, serve cached responses, synthesize responses, and more. As a result, Server Timing enables Service Worker to report custom performance metrics about how the request was processed: whether it was fetched from server or server from local cache, duration of relevant the processing steps, and so on.
+  Similarly, when a Service Worker is active, some or all of the navigation and resource requests may be routed through it. Effectively, an active Service Worker is a local proxy that is able to reroute requests, serve cached responses, synthesize responses, and more. As a result, Server Timing enables Service Worker to report custom performance metrics about how the request was processed: whether it was fetched from a server or served from local cache, duration of relevant the processing steps, and so on.
 </section>
 
 <section class='appendix informative'>
