@@ -67,10 +67,10 @@ This specification introduces <a>PerformanceServerTiming</a> interface, which en
 
 ### The `Server-Timing` Header Field
 
-The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) syntax for the <a>Server-Timing header field</a> is as follows:
+The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[!RFC5234]] syntax for the <a>Server-Timing header field</a> is as follows:
 
 ```ABNF
-  Server-Timing        = "Server-Timing" ":" #server-timing-metric
+  Server-Timing        = #server-timing-metric
   server-timing-metric = metric  [ OWS ";" OWS description ]
   metric               = metric-name [ OWS "=" OWS metric-value ]
   metric-name          = token
@@ -85,7 +85,7 @@ The <dfn>Server-Timing header field</dfn> is used to communicate one or more met
 * Each metric MAY have an optional description.
 * The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.
 
-See [[!RFC7230]] for definitions of `token`, `DIGIT`, `quoted-string`, and `OWS`.
+See [[!RFC7230]] for definitions of `#`, `OWS`, `token`, `DIGIT`, and `quoted-string`.
 
 <div class="note">
   - To minimize the HTTP overhead the provided metrics and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
