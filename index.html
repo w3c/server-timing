@@ -171,14 +171,9 @@ See [[!RFC7230]] for definitions of `#`, `OWS`, `token`, `DIGIT`, and `quoted-st
 <p>The user-agent MUST process <a>Server-Timing header field</a> communicated via a trailer field (see [[!RFC7230]] section 4.1.2) using the same algorithm.</p>
 
 ### Cross-origin Resources
-Cross-origin resources (i.e. non <a data-cite="!RFC6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a data-cite="!PERFORMANCE-TIMELINE-2#sec-performance-timeline">Performance Timeline</a>. If the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING-2]], fails for a cross-origin resource:
+Cross-origin resources (i.e. non <a data-cite="!RFC6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a data-cite="!PERFORMANCE-TIMELINE-2#sec-performance-timeline">Performance Timeline</a> if the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING-2]], passes. As the mere presence of a particularly named <a>PerformanceServerTiming</a> object is enough to communicate boolean information, if the "timing allow check" algorithm fails, the cross-origin resource MUST be excluded.
 
-<ul data-link-for="PerformanceServerTiming">
-  <li>The <a>duration</a> MUST be set to value 0.</li>
-  <li>The <a>description</a> MUST be set to an empty string.</li>
-</ul>
-
-Server must return the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING-2]], to allow the user agent to fully expose, to the document origin(s) specified, the values of attributes that would have been set to zero or empty string due to the cross-origin restrictions.
+Servers must return the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING-2]], to allow the user agent to fully expose, to the document origin(s) specified, the <a>PerformanceServerTiming</a> object that would have been excluded due to the cross-origin restrictions.
 </section>
 
 <section class='informative'>
