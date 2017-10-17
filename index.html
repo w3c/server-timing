@@ -141,10 +141,16 @@ See [[!RFC7230]] for definitions of `#`, `OWS`, `token`, `DIGIT`, and `quoted-st
 ## Process
 
 ### Processing Model
-<p>When processing the response of the <a data-cite="NAVIGATION-TIMING-2#current-document">current document</a> call the <a>server-timing header parsing algorithm</a> with <var>resource timing object</var> set to the <a data-cite="NAVIGATION-TIMING-2#step-create-object">newly created</a> `PerformanceNavigationTiming` object.
+<p>When processing the response of the <a data-cite="NAVIGATION-TIMING-2#current-document">current document</a>, set the <a data-lt="PerformanceResourceTiming.serverTiming">serverTiming</a> attribute on the <a data-cite="NAVIGATION-TIMING-2#step-create-object">newly created</a> `PerformanceNavigationTiming` object to the return value of the <a>server-timing header parsing algorithm</a>
 </p>
 
-<p>For each resource <a data-cite="FETCH#concept-fetch">fetched</a> by the current <a href="https://www.w3.org/TR/html5/browsers.html#browsing-context">browsing context</a>, excluding resources fetched by cross-origin stylesheets fetched with <code>no-cors</code> policy, call the <a>server-timing header parsing algorithm</a> with <var>resource timing object</var> set to the <a data-cite="RESOURCE-TIMING-2#step-create-object">newly created</a> <a>PerformanceResourceTiming</a> object.
+<p>For each resource <a data-cite="FETCH#concept-fetch">fetched</a> by the current <a href="https://www.w3.org/TR/html5/browsers.html#browsing-context">browsing context</a>, excluding resources fetched by cross-origin stylesheets fetched with <code>no-cors</code> policy, set the <a data-lt="PerformanceResourceTiming.serverTiming">serverTiming</a> attribute on the <a data-cite="RESOURCE-TIMING-2#step-create-object">newly created</a> <a>PerformanceResourceTiming</a> object to:
+  <ol>
+    <li>If the "timing allow check" algorithm (as defined in [[RESOURCE-TIMING-2]]) passes, the return value of the <a>server-timing header parsing algorithm</a>
+    </li>
+    <li>An empty <a data-cite="WEBIDL#sequence">sequence</a>, otherwise.
+    </li>
+  </ol>
 </p>
 
 #### <dfn>server-timing header parsing algorithm</dfn>
@@ -163,17 +169,11 @@ See [[!RFC7230]] for definitions of `#`, `OWS`, `token`, `DIGIT`, and `quoted-st
       </li>
     </ol>
   </li>
-  <li>Set the <a data-lt="PerformanceResourceTiming.serverTiming">serverTiming</a> attribute on <var>resource timing object</var> to <var>entryList</var>.
-  </li>
+  <li>Return <var>entryList</var></li>
 </ol>
 
 <!-- TODO(cvazac) Should this be a MUST? -->
 <p>The user-agent MUST process <a>Server-Timing header field</a> communicated via a trailer field (see [[!RFC7230]] section 4.1.2) using the same algorithm.</p>
-
-### Cross-origin Resources
-Cross-origin resources (i.e. non <a data-cite="!RFC6454#section-5">same origin</a>) MUST be included as <a>PerformanceServerTiming</a> objects in the <a data-cite="!PERFORMANCE-TIMELINE-2#sec-performance-timeline">Performance Timeline</a> if the "timing allow check" algorithm, as defined in [[RESOURCE-TIMING-2]], passes. As the mere presence of a particularly named <a>PerformanceServerTiming</a> object is enough to communicate boolean information, if the "timing allow check" algorithm fails, the cross-origin resource MUST be excluded.
-
-Servers must return the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING-2]], to allow the user agent to fully expose, to the document origin(s) specified, the <a>PerformanceServerTiming</a> object that would have been excluded due to the cross-origin restrictions.
 </section>
 
 <section class='informative'>
