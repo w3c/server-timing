@@ -71,24 +71,25 @@ The <dfn>Server-Timing header field</dfn> is used to communicate one or more met
 
 ```ABNF
   Server-Timing        = #server-timing-metric
-  server-timing-metric = metric  [ OWS ";" OWS description ]
-  metric               = metric-name [ OWS "=" OWS metric-value ]
+  server-timing-metric = metric-name *( OWS ";" OWS server-timing-param )
   metric-name          = token
-  metric-value         = *DIGIT [ "." 1*DIGIT ]
-  description          = token | quoted-string
+  server-timing-param  = token OWS [ "=" OWS ( token / quoted-string ) ]
 ```
 
-* Each metric MUST have a name.
-  * Metric names MAY be repeated.
-  * Metric names are defined by the server.
-* Each metric MAY have an optional numeric value.
-* Each metric MAY have an optional description.
-* The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.
+See [[!RFC7230]] for definitions of `#`, `*`, `OWS`, `token`, and `quoted-string`.
 
-See [[!RFC7230]] for definitions of `#`, `OWS`, `token`, `DIGIT`, and `quoted-string`.
+Metric names MAY be repeated per response.
+
+The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.
+
+This header field is defined with an extensible syntax to allow for future parameters. A user agent that does not recognize particular parameter tokens in the Server-Timing header field of a response MUST ignore those tokens and continue processing instead of signaling an error.
+
+To avoid any possible ambiguity, individual parameter tokens SHOULD NOT appear multiple times within a server-timing-metric. If any parameter is specified more than once, only the first instance is to be considered. All subsequent occurrences SHOULD be ignored without signaling an error or otherwise altering the processing of the server-timing-metric. This is the only case in which the ordering of parameters within a server-timing-metric is considered to be significant.
+
+This specification establishes the server-timing-params "duration" and "description", both optional.
 
 <div class="note">
-  - To minimize the HTTP overhead the provided metrics and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
+  - To minimize the HTTP overhead the provided names and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
 
   - Because there can be no guarantee of clock synchronization between client, server, and intermediaries, it is impossible to map a meaningful `startTime` onto the clients timeline. For that reason, any `startTime` attribution is purposely omitted from this specification. If the developers want to establish a relationship between multiple entries, they can do so by communicating custom data via metric names and/or descriptions.
 
@@ -111,13 +112,13 @@ See [[!RFC7230]] for definitions of `#`, `OWS`, `token`, `DIGIT`, and `quoted-st
   When <dfn>toJSON</dfn> is called, run [[!WEBIDL]]'s <a data-cite="WEBIDL#default-tojson-operation">default toJSON operation</a>.
 
   ### <dfn>name</dfn> attribute
-  The <a>name</a> attribute MUST return the server-specified metric-name.
+  The <a>name</a> attribute MUST return the server-specified metric name.
 
   ### <dfn>duration</dfn> attribute
-  The <a>duration</a> attribute MUST return a double that contains the server-specified metric-value, or value `0.0`.
+  The <a>duration</a> attribute MUST return a double that contains the server-specified metric value, or value `0.0`.
 
   ### <dfn>description</dfn> attribute
-  The <a>description</a> attribute MUST return the server-specified metric-description, or an empty string.
+  The <a>description</a> attribute MUST return the server-specified metric description, or an empty string.
 </section>
 
 <!-- TODO: How do extend and cross-reference the interface? -->
@@ -216,18 +217,18 @@ Server must return the `Timing-Allow-Origin` HTTP response header, as defined in
     > Host: example.com
 
     &lt; HTTP/1.1 200 OK
-    &lt; Server-Timing: miss, db=53, app=47.2;
-    &lt; Server-Timing: customView, dc;atl
+    &lt; Server-Timing: miss, db;duration=53, app;duration=47.2
+    &lt; Server-Timing: customView, dc;description=atl
     &lt; Trailer: Server-Timing
     &lt; (... snip response body ...)
-    &lt; Server-Timing: total=123.4
+    &lt; Server-Timing: total;duration=123.4
   </pre>
 
   <table class="parameters">
     <thead>
       <tr>
         <th>Name</th>
-        <th>Value</th>
+        <th>Duration</th>
         <th>Description</th>
       </tr>
     </thead>
