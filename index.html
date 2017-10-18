@@ -70,10 +70,12 @@ This specification introduces <a>PerformanceServerTiming</a> interface, which en
 The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[!RFC5234]] syntax for the <a>Server-Timing header field</a> is as follows:
 
 ```ABNF
-  Server-Timing        = #server-timing-metric
-  server-timing-metric = metric-name *( OWS ";" OWS server-timing-param )
-  metric-name          = token
-  server-timing-param  = token OWS [ "=" OWS ( token / quoted-string ) ]
+  Server-Timing             = #server-timing-metric
+  server-timing-metric      = metric-name *( OWS ";" OWS server-timing-param )
+  metric-name               = token
+  server-timing-param       = server-timing-param-name OWS [ "=" OWS server-timing-param-value ]
+  server-timing-param-name  = token
+  server-timing-param-value = token / quoted-string
 ```
 
 See [[!RFC7230]] for definitions of `#`, `*`, `OWS`, `token`, and `quoted-string`.
@@ -82,11 +84,11 @@ Metric names MAY be repeated per response.
 
 The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.
 
-This header field is defined with an extensible syntax to allow for future parameters. A user agent that does not recognize particular parameter tokens in the Server-Timing header field of a response MUST ignore those tokens and continue processing instead of signaling an error.
+This header field is defined with an extensible syntax to allow for future parameters. A user agent that does not recognize particular server-timing-param-name in the Server-Timing header field of a response MUST ignore those tokens and continue processing instead of signaling an error.
 
-To avoid any possible ambiguity, individual parameter tokens SHOULD NOT appear multiple times within a server-timing-metric. If any parameter is specified more than once, only the first instance is to be considered. All subsequent occurrences SHOULD be ignored without signaling an error or otherwise altering the processing of the server-timing-metric. This is the only case in which the ordering of parameters within a server-timing-metric is considered to be significant.
+To avoid any possible ambiguity, individual server-timing-param-name SHOULD NOT appear multiple times within a server-timing-metric. If any parameter is specified more than once, only the first instance is to be considered. All subsequent occurrences SHOULD be ignored without signaling an error or otherwise altering the processing of the server-timing-metric. This is the only case in which the ordering of parameters within a server-timing-metric is considered to be significant.
 
-This specification establishes the server-timing-params "duration" and "description", both optional.
+This specification establishes the server-timing-params for server-timing-param-names "duration" and "description", both optional.
 
 <div class="note">
   - To minimize the HTTP overhead the provided names and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
@@ -112,13 +114,13 @@ This specification establishes the server-timing-params "duration" and "descript
   When <dfn>toJSON</dfn> is called, run [[!WEBIDL]]'s <a data-cite="WEBIDL#default-tojson-operation">default toJSON operation</a>.
 
   ### <dfn>name</dfn> attribute
-  The <a>name</a> attribute MUST return the server-specified metric name.
+  The <a>name</a> attribute MUST return the DOMString value of the server-specified metric name.
 
   ### <dfn>duration</dfn> attribute
-  The <a>duration</a> attribute MUST return a double that contains the server-specified metric value, or value `0.0`.
+  The <a>duration</a> attribute MUST return a double that contains the server-specified metric duration, or value `0.0`.
 
   ### <dfn>description</dfn> attribute
-  The <a>description</a> attribute MUST return the server-specified metric description, or an empty string.
+  The <a>description</a> attribute MUST return the DOMString value of the server-specified metric description, or an empty string.
 </section>
 
 <!-- TODO: How do extend and cross-reference the interface? -->
