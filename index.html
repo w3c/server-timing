@@ -159,9 +159,9 @@ This specification establishes the server-timing-params for server-timing-param-
   <li>For each server-specified metric received from parsing the <a>Server-Timing header field</a>, perform the following steps:
     <ol data-link-for="PerformanceServerTiming">
       <li>Let <dfn>entry</dfn> be a new <a>PerformanceServerTiming</a> object.</li>
-      <li>Set <a>name</a> to the server-specified metric-name.</li>
-      <li>Set <a>duration</a> to the server-specified metric-value, or value 0 if omitted or not representable as a double.</li>
-      <li>Set <a>description</a> to the server-specified metric-description, or an empty string.</li>
+      <li>Set <a>name</a> to metric-name.</li>
+      <li>Set <a>duration</a> to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "duration", or value 0 if omitted or not representable as a double.</li>
+      <li>Set <a>description</a> to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "description", or an empty string if omitted.</li>
       <li>Append <var>entry</var> to <var>entryList</var>.
       </li>
     </ol>
