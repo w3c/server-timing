@@ -80,7 +80,7 @@ The <dfn>Server-Timing header field</dfn> is used to communicate one or more met
 
 See [[!RFC7230]] for definitions of `#`, `*`, `OWS`, `token`, and `quoted-string`.
 
-Metric names MAY be repeated per response.
+On a response, there can be any number of server-timing-metric entries with the same metric-name.
 
 The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.
 
