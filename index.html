@@ -80,15 +80,15 @@ The <dfn>Server-Timing header field</dfn> is used to communicate one or more met
 
 See [[!RFC7230]] for definitions of `#`, `*`, `OWS`, `token`, and `quoted-string`.
 
-On a response, there can be any number of server-timing-metric entries with the same metric-name.
+A response MAY have multiple server-timing-metric entries with the same metric-name, and the user agent MUST process and expose all such entries.
 
 The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.
 
 This header field is defined with an extensible syntax to allow for future parameters. A user agent that does not recognize particular server-timing-param-name in the Server-Timing header field of a response MUST ignore those tokens and continue processing instead of signaling an error.
 
-To avoid any possible ambiguity, individual server-timing-param-name SHOULD NOT appear multiple times within a server-timing-metric. If any parameter is specified more than once, only the first instance is to be considered. All subsequent occurrences SHOULD be ignored without signaling an error or otherwise altering the processing of the server-timing-metric. This is the only case in which the ordering of parameters within a server-timing-metric is considered to be significant.
+To avoid any possible ambiguity, individual server-timing-param-name SHOULD NOT appear multiple times within a server-timing-metric. If any parameter is specified more than once, only the first instance is to be considered. All subsequent occurrences MUST be ignored without signaling an error or otherwise altering the processing of the server-timing-metric. This is the only case in which the ordering of parameters within a server-timing-metric is considered to be significant.
 
-This specification establishes the server-timing-params for server-timing-param-names "duration" and "description", both optional.
+This specification establishes the server-timing-params for server-timing-param-names <a href="#dom-performanceservertiming-duration">duration</a> and <a href="#dom-performanceservertiming-description">description</a>, both optional.
 
 <div class="note">
   - To minimize the HTTP overhead the provided names and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
