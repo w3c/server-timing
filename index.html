@@ -88,7 +88,9 @@ This header field is defined with an extensible syntax to allow for future param
 
 To avoid any possible ambiguity, individual server-timing-param-name SHOULD NOT appear multiple times within a server-timing-metric. If any parameter is specified more than once, only the first instance is to be considered. All subsequent occurrences MUST be ignored without signaling an error or otherwise altering the processing of the server-timing-metric. This is the only case in which the ordering of parameters within a server-timing-metric is considered to be significant.
 
-This specification establishes the server-timing-params for server-timing-param-names <a href="#dom-performanceservertiming-duration">duration</a> and <a href="#dom-performanceservertiming-description">description</a>, both optional.
+<p data-link-for="PerformanceServerTiming">
+This specification establishes the server-timing-params for server-timing-param-names <a>duration</a> and <a>description</a>, both optional.
+</p>
 
 <div class="note">
   - To minimize the HTTP overhead the provided names and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
