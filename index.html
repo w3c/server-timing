@@ -89,7 +89,7 @@ This header field is defined with an extensible syntax to allow for future param
 To avoid any possible ambiguity, individual server-timing-param-name SHOULD NOT appear multiple times within a server-timing-metric. If any parameter is specified more than once, only the first instance is to be considered. All subsequent occurrences MUST be ignored without signaling an error or otherwise altering the processing of the server-timing-metric. This is the only case in which the ordering of parameters within a server-timing-metric is considered to be significant.
 
 <p data-link-for="PerformanceServerTiming">
-This specification establishes the server-timing-params for server-timing-param-names <a>duration</a> and <a>description</a>, both optional.
+  This specification establishes the server-timing-params for server-timing-param-names <a data-lt="PerformanceServerTiming.duration">dur</a> and <a data-lt="PerformanceServerTiming.description">desc</a>, both optional.
 </p>
 
 <div class="note">
@@ -168,8 +168,8 @@ This specification establishes the server-timing-params for server-timing-param-
     <ol data-link-for="PerformanceServerTiming">
       <li>Let <dfn>entry</dfn> be a new <a>PerformanceServerTiming</a> object.</li>
       <li>Set <a>name</a> to metric-name.</li>
-      <li>Set <a>duration</a> to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "duration", or value 0 if omitted or not representable as a double.</li>
-      <li>Set <a>description</a> to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "description", or an empty string if omitted.</li>
+      <li>Set <a>duration</a> to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "dur", or value 0 if omitted or not representable as a double.</li>
+      <li>Set <a>description</a> to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "desc", or an empty string if omitted.</li>
       <li>Append <var>entry</var> to <var>entryList</var>.
       </li>
     </ol>
@@ -216,11 +216,11 @@ This specification establishes the server-timing-params for server-timing-param-
     > Host: example.com
 
     &lt; HTTP/1.1 200 OK
-    &lt; Server-Timing: miss, db;duration=53, app;duration=47.2
-    &lt; Server-Timing: customView, dc;description=atl
+    &lt; Server-Timing: miss, db;dur=53, app;dur=47.2
+    &lt; Server-Timing: customView, dc;desc=atl
     &lt; Trailer: Server-Timing
     &lt; (... snip response body ...)
-    &lt; Server-Timing: total;duration=123.4
+    &lt; Server-Timing: total;dur=123.4
   </pre>
 
   <table class="parameters">
