@@ -86,9 +86,9 @@ The user agent MAY surface provided metrics in any order - i.e. the order of met
 
 This header field is defined with an extensible syntax to allow for future parameters. A user agent that does not recognize particular server-timing-param-name in the Server-Timing header field of a response MUST ignore those tokens and continue processing instead of signaling an error.
 
-To avoid any possible ambiguity, individual server-timing-param-name SHOULD NOT appear multiple times within a server-timing-metric. If any server-timing-param-name is specified more than once, only the first instance is to be considered, even if the server-timing-param is incomplete or invalid. All subsequent occurrences MUST be ignored without signaling an error or otherwise altering the processing of the server-timing-metric. This is the only case in which the ordering of parameters within a server-timing-metric is considered to be significant.
+To avoid any possible ambiguity, individual `server-timing-param-name`s SHOULD NOT appear multiple times within a `server-timing-metric`. If any `server-timing-param-name` is specified more than once, only the first instance is to be considered, even if the `server-timing-param` is incomplete or invalid. All subsequent occurrences MUST be ignored without signaling an error or otherwise altering the processing of the `server-timing-metric`. This is the only case in which the ordering of parameters within a `server-timing-metric` is considered to be significant.
 
-When a user agent is parsing the header field, if an incomplete or invalid server-timing-param is found, the user agent SHOULD keep processing the header - either moving on to the next server-timing-param or server-timing-metric.
+User agents MUST ignore extraneous characters found after a `server-timing-param-value` but before the next `server-timing-param` and before the end of the current `server-timing-metric`.
 
 <p data-link-for="PerformanceServerTiming">
   This specification establishes the server-timing-params for server-timing-param-names <a data-lt="PerformanceServerTiming.duration">dur</a> and <a data-lt="PerformanceServerTiming.description">desc</a>, both optional.
