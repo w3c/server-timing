@@ -88,6 +88,8 @@ This header field is defined with an extensible syntax to allow for future param
 
 To avoid any possible ambiguity, individual server-timing-param-name SHOULD NOT appear multiple times within a server-timing-metric. If any server-timing-param-name is specified more than once, only the first instance is to be considered, even if the server-timing-param is incomplete or invalid. All subsequent occurrences MUST be ignored without signaling an error or otherwise altering the processing of the server-timing-metric. This is the only case in which the ordering of parameters within a server-timing-metric is considered to be significant.
 
+When a user agent is parsing the header field, if an incomplete or invalid server-timing-param is found, the user agent SHOULD keep processing the header - either moving on to the next server-timing-param or server-timing-metric.
+
 <p data-link-for="PerformanceServerTiming">
   This specification establishes the server-timing-params for server-timing-param-names <a data-lt="PerformanceServerTiming.duration">dur</a> and <a data-lt="PerformanceServerTiming.description">desc</a>, both optional.
 </p>
