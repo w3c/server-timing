@@ -90,6 +90,8 @@ To avoid any possible ambiguity, individual `server-timing-param-name`s SHOULD N
 
 User agents MUST ignore extraneous characters found after a `server-timing-param-value` but before the next `server-timing-param` and before the end of the current `server-timing-metric`.
 
+User agents MUST ignore extraneous characters found after a `metric-name` but before the first `server-timing-param` and before the next `server-timing-metric`.
+
 <p data-link-for="PerformanceServerTiming">
   This specification establishes the server-timing-params for server-timing-param-names <a data-lt="PerformanceServerTiming.duration">dur</a> and <a data-lt="PerformanceServerTiming.description">desc</a>, both optional.
 </p>
