@@ -220,6 +220,7 @@ User agents MUST ignore extraneous characters found after a `server-timing-param
     &lt; HTTP/1.1 200 OK
     &lt; Server-Timing: miss, db;dur=53, app;dur=47.2
     &lt; Server-Timing: customView, dc;desc=atl
+    &lt; Server-Timing: cache;desc="Cache Read";dur=23.2
     &lt; Trailer: Server-Timing
     &lt; (... snip response body ...)
     &lt; Server-Timing: total;dur=123.4
@@ -239,16 +240,18 @@ User agents MUST ignore extraneous characters found after a `server-timing-param
       <tr><td>app</td><td>47.2</td><td></td></tr>
       <tr><td>customView</td><td></td><td></td></tr>
       <tr><td>dc</td><td></td><td>atl</td></tr>
+      <tr><td>cache</td><td>23.2</td><td>Cache Read</td></tr>
       <tr><td>total</td><td>123.4</td><td></td></tr>
     </tbody>
   </table>
 
-  <p>The above header fields communicate five distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for `example.com/resource.jpg` fetch:</p>
+  <p>The above header fields communicate six distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for `example.com/resource.jpg` fetch:</p>
 
   <ol>
     <li>There was a cache miss.</li>
     <li>The request was routed through the "atl" datacenter ("dc").</li>
     <li>The database ("db") time was 53 ms.</li>
+    <li>A cache read took 23.2 ms.</li>
     <li>The application server ("app") took 47.2ms to process "customView" template or function.</li>
     <li>The total time for the request-response cycle on the server was 123.4ms, which is recorded at the end of the response and delivered via a trailer field.</li>
   </ol>
