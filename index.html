@@ -108,15 +108,15 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 <section data-dfn-for="PerformanceServerTiming" data-link-for="PerformanceServerTiming">
   ## The <dfn>PerformanceServerTiming</dfn> Interface
 
-  <pre class='idl'>
-    [Exposed=(Window,Worker)]
-    interface PerformanceServerTiming {
-      readonly attribute DOMString name;
-      readonly attribute DOMHighResTimeStamp duration;
-      readonly attribute DOMString description;
-      [Default] object toJSON();
-    };
-  </pre>
+  ``` webidl
+  [Exposed=(Window,Worker)]
+  interface PerformanceServerTiming {
+    readonly attribute DOMString name;
+    readonly attribute DOMHighResTimeStamp duration;
+    readonly attribute DOMString description;
+    [Default] object toJSON();
+  };
+  ```
 
   When <dfn>toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON operation=].
 
@@ -136,12 +136,12 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 
   The <dfn data-cite="RESOURCE-TIMING-2#performanceresourcetiming">PerformanceResourceTiming</dfn> interface, which this specification partially extends, is defined in [[RESOURCE-TIMING-2]].
 
-  <pre class='idl'>
+  ``` webidl
   [Exposed=(Window,Worker)]
   partial interface PerformanceResourceTiming {
     readonly attribute FrozenArray&lt;PerformanceServerTiming&gt; serverTiming;
   };
-  </pre>
+  ```
 
   ### <dfn>serverTiming</dfn> attribute
   The <a>serverTiming</a> attribute returns a sequence of <a>PerformanceServerTiming</a> entries.
