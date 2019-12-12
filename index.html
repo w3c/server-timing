@@ -28,6 +28,7 @@
     subjectPrefix: "[server-timing]",
     license: 'w3c-software-doc',
     format: "markdown",
+    xref: ["webidl", "fetch", "secure-contexts", "html"],
     github: "https://github.com/w3c/server-timing/",
     otherLinks: [{
       key: 'Mailing list',
@@ -117,7 +118,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
     };
   </pre>
 
-  When <dfn>toJSON</dfn> is called, run [[WEBIDL]]'s <a data-cite="WEBIDL#default-tojson-operation">default toJSON operation</a>.
+  When <dfn>toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON operation=].
 
   ### <dfn>name</dfn> attribute
   The <a>name</a> attribute MUST return the DOMString value of the server-specified metric name.
@@ -153,10 +154,10 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 <p>When processing the response of the <a data-cite="NAVIGATION-TIMING-2#current-document">current document</a>, set the <a data-lt="PerformanceResourceTiming.serverTiming">serverTiming</a> attribute on the <a data-cite="NAVIGATION-TIMING-2#step-create-object">newly created</a> `PerformanceNavigationTiming` object to the return value of the <a>server-timing header parsing algorithm</a>
 </p>
 
-<p>For each resource <a data-cite="FETCH#concept-fetch">fetched</a> by the current <a href="https://www.w3.org/TR/html5/browsers.html#browsing-context">browsing context</a>, excluding resources fetched by cross-origin stylesheets fetched with <code>no-cors</code> policy, set the <a data-lt="PerformanceResourceTiming.serverTiming">serverTiming</a> attribute on the <a data-cite="RESOURCE-TIMING-2#step-create-object">newly created</a> <a>PerformanceResourceTiming</a> object to:
+<p>For each resource [= fetch | fetched =] by the current [=browsing context=], excluding resources fetched by cross-origin stylesheets fetched with <code>no-cors</code> policy, set the <a data-lt="PerformanceResourceTiming.serverTiming">serverTiming</a> attribute on the <a data-cite="RESOURCE-TIMING-2#step-create-object">newly created</a> <a>PerformanceResourceTiming</a> object to:
   <ol>
-    <li>An empty <a data-cite="WEBIDL#sequence">sequence</a>, if the return value from the "timing allow check" algorithm (as defined in [[RESOURCE-TIMING-2]]) is <code>fail</code>.</li>
-  <li>An empty <a data-cite="WEBIDL#sequence">sequence</a>, if the user agent chooses to limit their support to <a data-link-type="dfn" href="https://w3c.github.io/webappsec-secure-contexts/#secure-contexts">secure contexts</a> and the <a data-link-type="dfn" href="https://w3c.github.io/resource-timing/#dfn-current-document">current document</a>'s <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/webappapis.html#environment-settings-object">environment settings object</a> is not <a data-link-type="dfn" href="https://w3c.github.io/webappsec-secure-contexts/#is-settings-object-contextually-secure">contextually secure</a>.</li>
+    <li>An empty [=sequence=], if the return value from the "timing allow check" algorithm (as defined in [[RESOURCE-TIMING-2]]) is <code>fail</code>.</li>
+  <li>An empty [=sequence=], if the user agent chooses to limit their support to [=secure contexts=] and the <a data-cite="resource-timing#dfn-current-document">current document</a>'s [=environment settings object=] is not <a data-cite="secure-contexts#is-settings-object-contextually-secure">contextually secure</a>.</li>
     <li>The return value of the <a>server-timing header parsing algorithm</a>, otherwise.</li>
   </ol>
 </p>
@@ -165,7 +166,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 <p>Given a <var>resource timing object</var>, perform the following steps:</p>
 
 <ol>
-  <li>Let <dfn>entryList</dfn> be a new empty <a data-cite="WEBIDL#sequence">sequence</a>.
+  <li>Let <dfn>entryList</dfn> be a new empty [=sequence=].
   </li>
   <li>For each server-specified metric received from parsing the <a>Server-Timing header field</a>, perform the following steps:
     <ol data-link-for="PerformanceServerTiming">
@@ -186,7 +187,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 <section class='informative'>
   ## Privacy and Security
 
-  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the <a data-cite="!HTML5#same-origin">same origin</a> policy by default. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING-2]], that specifies the domains that are allowed to access the server metrics.
+  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the [=same origin=] policy by default. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING-2]], that specifies the domains that are allowed to access the server metrics.
 
   In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.
 </section>
