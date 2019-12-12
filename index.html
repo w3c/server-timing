@@ -163,22 +163,22 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 </p>
 
 #### <dfn>server-timing header parsing algorithm</dfn>
-<p>Given a <var>resource timing object</var>, perform the following steps:</p>
+<p>Given a |resource timing object|, perform the following steps:</p>
 
 <ol>
-  <li>Let <dfn>entryList</dfn> be a new empty [=sequence=].
+  <li>Let |entryList| be a new empty [=sequence=].
   </li>
   <li>For each server-specified metric received from parsing the [=Server-Timing header field=], perform the following steps:
     <ol data-link-for="PerformanceServerTiming">
-      <li>Let <dfn>entry</dfn> be a new {{PerformanceServerTiming}} object.</li>
+      <li>Let |entry:PerformanceServerTiming| be a new {{PerformanceServerTiming}} object.</li>
       <li>Set {{name}} to metric-name.</li>
       <li>Set {{duration}} to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "dur", or value 0 if omitted or not representable as a double.</li>
       <li>Set {{description}} to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "desc", or an empty string if omitted.</li>
-      <li>Append <var>entry</var> to <var>entryList</var>.
+      <li>Append |entry| to |entryList|.
       </li>
     </ol>
   </li>
-  <li>Return <var>entryList</var></li>
+  <li>Return |entryList|</li>
 </ol>
 
 <p>The user-agent MAY process [=Server-Timing header field=] communicated via a trailer field (see [[RFC7230]] section 4.1.2) using the same algorithm.</p>
