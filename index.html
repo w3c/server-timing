@@ -60,14 +60,14 @@
 <section class='informative'>
 ## Introduction
 
-Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[!NAVIGATION-TIMING-2]] and [[!RESOURCE-TIMING-2]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
+Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING-2]] and [[RESOURCE-TIMING-2]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
 
 This specification introduces <a>PerformanceServerTiming</a> interface, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
 </section>
 
 ### The `Server-Timing` Header Field
 
-The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[!RFC5234]] syntax for the <a>Server-Timing header field</a> is as follows:
+The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[RFC5234]] syntax for the <a>Server-Timing header field</a> is as follows:
 
 ```ABNF
   Server-Timing             = #server-timing-metric
@@ -78,7 +78,7 @@ The <dfn>Server-Timing header field</dfn> is used to communicate one or more met
   server-timing-param-value = token / quoted-string
 ```
 
-See [[!RFC7230]] for definitions of `#`, `*`, `OWS`, `token`, and `quoted-string`.
+See [[RFC7230]] for definitions of `#`, `*`, `OWS`, `token`, and `quoted-string`.
 
 A response MAY have multiple server-timing-metric entries with the same metric-name, and the user agent MUST process and expose all such entries.
 
@@ -117,7 +117,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
     };
   </pre>
 
-  When <dfn>toJSON</dfn> is called, run [[!WEBIDL]]'s <a data-cite="WEBIDL#default-tojson-operation">default toJSON operation</a>.
+  When <dfn>toJSON</dfn> is called, run [[WEBIDL]]'s <a data-cite="WEBIDL#default-tojson-operation">default toJSON operation</a>.
 
   ### <dfn>name</dfn> attribute
   The <a>name</a> attribute MUST return the DOMString value of the server-specified metric name.
@@ -133,7 +133,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 <section data-dfn-for="PerformanceResourceTiming" data-link-for="PerformanceResourceTiming">
   ### Extension to the <a>PerformanceResourceTiming</a> interface
 
-  The <dfn data-cite="RESOURCE-TIMING-2#performanceresourcetiming">PerformanceResourceTiming</dfn> interface, which this specification partially extends, is defined in [[!RESOURCE-TIMING-2]].
+  The <dfn data-cite="RESOURCE-TIMING-2#performanceresourcetiming">PerformanceResourceTiming</dfn> interface, which this specification partially extends, is defined in [[RESOURCE-TIMING-2]].
 
   <pre class='idl'>
   [Exposed=(Window,Worker)]
@@ -180,13 +180,13 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   <li>Return <var>entryList</var></li>
 </ol>
 
-<p>The user-agent MAY process <a>Server-Timing header field</a> communicated via a trailer field (see [[!RFC7230]] section 4.1.2) using the same algorithm.</p>
+<p>The user-agent MAY process <a>Server-Timing header field</a> communicated via a trailer field (see [[RFC7230]] section 4.1.2) using the same algorithm.</p>
 </section>
 
 <section class='informative'>
   ## Privacy and Security
 
-  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the <a data-cite="!HTML5#same-origin">same origin</a> policy by default. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[!RESOURCE-TIMING-2]], that specifies the domains that are allowed to access the server metrics.
+  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the <a data-cite="!HTML5#same-origin">same origin</a> policy by default. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING-2]], that specifies the domains that are allowed to access the server metrics.
 
   In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.
 </section>
@@ -294,6 +294,8 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 
   Similarly, when a Service Worker is active, some or all of the navigation and resource requests may be routed through it. Effectively, an active Service Worker is a local proxy that is able to reroute requests, serve cached responses, synthesize responses, and more. As a result, Server Timing enables Service Worker to report custom performance metrics about how the request was processed: whether it was fetched from a server or served from local cache, duration of relevant the processing steps, and so on.
 </section>
+
+<section id="conformance"></section>
 
 <section class='appendix informative'>
   ## Acknowledgments
