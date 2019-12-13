@@ -157,7 +157,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 <p>For each resource [= fetch | fetched =] by the current [=browsing context=], excluding resources fetched by cross-origin stylesheets fetched with `no-cors` policy, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="RESOURCE-TIMING-2#step-create-object">newly created</a> {{PerformanceResourceTiming}} object to:
   <ol>
     <li>An empty [=sequence=], if the return value from the "timing allow check" algorithm (as defined in [[RESOURCE-TIMING-2]]) is `fail`.</li>
-  <li>An empty [=sequence=], if the user agent chooses to limit their support to [=secure contexts=] and the <a data-cite="resource-timing#dfn-current-document">current document</a>'s [=environment settings object=] is not <a data-cite="secure-contexts#is-settings-object-contextually-secure">contextually secure</a>.</li>
+  <li>An empty [=sequence=], if the user agent chooses to limit their support to [=secure contexts=] and the <a data-cite="resource-timing-2#dfn-current-document">current document</a>'s [=environment settings object=] is not <a data-cite="secure-contexts#is-settings-object-contextually-secure">contextually secure</a>.</li>
     <li>The return value of the [=server-timing header parsing algorithm=], otherwise.</li>
   </ol>
 </p>
