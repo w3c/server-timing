@@ -94,7 +94,7 @@ User agents MUST ignore extraneous characters found after a `server-timing-param
 User agents MUST ignore extraneous characters found after a `metric-name` but before the first `server-timing-param` and before the next `server-timing-metric`.
 
 <p data-link-for="PerformanceServerTiming">
-  This specification establishes the server-timing-params for server-timing-param-names {{duration}} and {{description}}, both optional.
+  This specification establishes the server-timing-params for server-timing-param-names "dur" for {{duration}} and "desc" for {{description}}, both optional.
 </p>
 
 <div class="note">
@@ -151,7 +151,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 ## Process
 
 ### Processing Model
-<p>When processing the response of the <a data-cite="NAVIGATION-TIMING-2#current-document">current document</a>, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="NAVIGATION-TIMING-2#step-create-object">newly created</a> `PerformanceNavigationTiming` object to the return value of the [=server-timing header parsing algorithm=]
+<p>When processing the response of the <a data-cite="NAVIGATION-TIMING-2#dfn-current-document">current document</a>, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="NAVIGATION-TIMING-2#step-create-object">newly created</a> `PerformanceNavigationTiming` object to the return value of the [=server-timing header parsing algorithm=]
 </p>
 
 <p>For each resource [= fetch | fetched =] by the current [=browsing context=], excluding resources fetched by cross-origin stylesheets fetched with `no-cors` policy, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="RESOURCE-TIMING-2#step-create-object">newly created</a> {{PerformanceResourceTiming}} object to:
