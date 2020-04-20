@@ -2,7 +2,7 @@
 <head>
   <title>Server Timing</title>
   <meta charset='utf-8'>
-  <script src='//www.w3.org/Tools/respec/respec-w3c-common' async class='remove'></script>
+  <script src='//www.w3.org/Tools/respec/respec-w3c' async class='remove'></script>
   <script class='remove'>
   var respecConfig = {
     shortName: "server-timing",
@@ -109,7 +109,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 <section data-dfn-for="PerformanceServerTiming" data-link-for="PerformanceServerTiming">
   ## The <dfn>PerformanceServerTiming</dfn> Interface
 
-  <pre class='idl'>
+  <pre class='idl' data-cite="hr-time">
     [Exposed=(Window,Worker)]
     interface PerformanceServerTiming {
       readonly attribute DOMString name;
