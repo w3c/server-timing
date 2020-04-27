@@ -66,6 +66,8 @@ Accurately measuring performance characteristics of web applications is an impor
 This specification introduces {{PerformanceServerTiming}} interface, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
 </section>
 
+<section id='conformance'></section>
+
 ### The `Server-Timing` Header Field
 
 The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[RFC5234]] syntax for the [=Server-Timing header field=] is as follows:
@@ -108,15 +110,15 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 <section data-dfn-for="PerformanceServerTiming" data-link-for="PerformanceServerTiming">
   ## The <dfn>PerformanceServerTiming</dfn> Interface
 
-  ``` webidl
-  [Exposed=(Window,Worker)]
-  interface PerformanceServerTiming {
-    readonly attribute DOMString name;
-    readonly attribute DOMHighResTimeStamp duration;
-    readonly attribute DOMString description;
-    [Default] object toJSON();
-  };
-  ```
+  <pre class='idl' data-cite="hr-time">
+    [Exposed=(Window,Worker)]
+    interface PerformanceServerTiming {
+      readonly attribute DOMString name;
+      readonly attribute DOMHighResTimeStamp duration;
+      readonly attribute DOMString description;
+      [Default] object toJSON();
+    };
+  </pre>
 
   When <dfn>toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON operation=].
 
