@@ -110,15 +110,15 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 <section data-dfn-for="PerformanceServerTiming" data-link-for="PerformanceServerTiming">
   ## The <dfn>PerformanceServerTiming</dfn> Interface
 
-  <pre class='idl' data-cite="hr-time">
-    [Exposed=(Window,Worker)]
-    interface PerformanceServerTiming {
-      readonly attribute DOMString name;
-      readonly attribute DOMHighResTimeStamp duration;
-      readonly attribute DOMString description;
-      [Default] object toJSON();
-    };
-  </pre>
+  ``` webidl
+  [Exposed=(Window,Worker)]
+  interface PerformanceServerTiming {
+    readonly attribute DOMString name;
+    readonly attribute DOMHighResTimeStamp duration;
+    readonly attribute DOMString description;
+    [Default] object toJSON();
+  };
+  ```
 
   When <dfn>toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON operation=].
 
