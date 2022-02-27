@@ -123,20 +123,20 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   When <dfn>toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON steps=].
 
   ### <dfn>name</dfn> attribute
-  The {{name}} getter steps are to return <a>this</a>'s {{PerformanceServerTiming/metric name}}.
+  The <a>name</a> getter steps are to return <a>this</a>'s {{PerformanceServerTiming/metric name}}.
 
   ### <dfn>duration</dfn> attribute
-  The {{duration}} getter steps are to do the following:
+  The <a>duration</a>> getter steps are to do the following:
   <ol>
-    <li><p>If <a>this</a>'s {{PerformanceServerTiming/params}}[<code>"dur"</code>] does not [=map/exists|exist=], return 0.</p></li>
+    <li><p>If <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] does not [=map/exists|exist=], return 0.</p></li>
 
-    <li><p>Let |dur| be the result of parsing <a>this</a>'s {{PerformanceServerTiming/params}}[<code>"dur"</code>] using the [=rules for parsing floating-point number values=].</p></li>
+    <li><p>Let |dur| be the result of parsing <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] using the [=rules for parsing floating-point number values=].</p></li>
 
     <li><p>If |dur| is an error, return 0; Otherwise return |dur|.</p></li>
   </ol>
 
   ### <dfn>description</dfn> attribute
-  The {{description}} getter steps are to return <a>this</a>'s {{PerformanceServerTiming/params}}[<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.
+  The {{description}} getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.
 
   A {{PerformanceServerTiming}} has an associated string <dfn>metric name</dfn>, initially set to the empty string.
 
@@ -157,89 +157,79 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   ```
 
   ### <code>serverTiming</code> attribute
-  The {{serverTiming}} attribute returns a sequence of {{PerformanceServerTiming}} entries.
 
-  <dl data-link-for="PerformanceResourceTiming">
-    <dt>
-      <dfn for="PerformanceServerTiming">serverTiming</dfn>
-    </dt>
-    <dd>
-      The <a for>serverTiming</a> getter steps are the following:
+  The <dfn>serverTiming</dfn> getter steps are the following:
+  <ol>
+    <li><p>Let |entries| be a new [=list=].</p></li>
+
+    <li>
+      <p>[=list/iterate|For each=] |rawMetric| in <a>this</a>'s <a data-cite="RESOURCE-TIMING#dfn-timing-info">timing info</a>'s [=fetch timing info/server timing headerss=]:</p>
+
       <ol>
-        <li><p>Let |entries| be a new [=list=].</p></li>
+        <li><p>Let |position| be a [=string/position variable=], initially pointing at the start of |rawMetric|.</p></li>
+
+        <li><p>Let |rawName| be the result of [=collecting a sequence of code points=]
+        that are not equal to U+003B (;), given <var>position</var>.
+
+        <li><p>Let |name| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawName|.</p></li>
+
+        <li><p>If |name| is an empty string, [=iteration/continue=].</p></li>
+
+        <li><p>Let |metric| be a new {{PerformanceServerTiming}} whose {{PerformanceServerTiming/metric name}} is |name|.</p></li>
+
+        <li><p>Let |params| be an empty <a data-cite="INFRA#map">map</a>.</p></li>
 
         <li>
-          <p>[=list/iterate|For each=] |rawMetric| in <a>this</a>'s <a data-for=
-          "PerformanceResourceTiming">timing info</a>'s [=fetch timing
-          info/raw server timing metrics=]:</p>
+          <p>While |position| is not at the end of |rawMetric|:</p>
 
           <ol>
-            <li><p>Let |position| be a [=string/position variable=], initially pointing at the start of |rawMetric|.</p></li>
+            <li><p>Advance <var>position</var> by 1.</p></li>
 
-            <li><p>Let |rawName| be the result of [=collecting a sequence of code points=]
-            that are not equal to U+003B (;), given <var>position</var>.
+            <li><p>Let |rawParamName| be the result of [=collecting a sequence of code points=] from |rawMetric|
+            that are not equal to U+003D (=), given <var>position</var>.</p></li>
 
-            <li><p>Let |name| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawName|.</p></li>
+            <li><p>Let |paramName| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamName|.</p></li>
 
-            <li><p>If |name| is an empty string, [=iteration/continue=].</p></li>
+            <li><p>If |paramName| is an empty string or |params|[|paramName|] [=map/exists=], [=iteration/continue=].</p></li>
 
-            <li><p>Let |metric| be a new {{PerformanceServerTiming}} whose {{PerformanceServerTiming/name}} is |name|.</p></li>
+            <li><p>Advance <var>position</var> by 1.</p></li>
 
-            <li><p>Let |params| be an empty <a data-cite="INFRA#map">map</a>.</p></li>
+            <li><p>Let |paramValue| be an empty string.</p></li>
+
+            <li><p>[=Skip ASCII whitespace=] within |rawMetric| given |position|.</p></li>
 
             <li>
-              <p>While |position| is not at the end of |rawMetric|:</p>
+              <p>If the [=code point=] at |position| within |rawMetric| is U+0022 ("), then:</p>
 
               <ol>
-                <li><p>Advance <var>position</var> by 1.</p></li>
+                <li><p>>Set |paramValue| to the result of [=collecting an HTTP quoted string=] from
+                |rawMetric| given <var>position</var> with the extract-value flag set.</p></li>
 
-                <li><p>Let |rawParamName| be the result of [=collecting a sequence of code points=] from |rawMetric|
-                that are not equal to U+003D (=), given <var>position</var>.</p></li>
-
-                <li><p>Let |paramName| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamName|.</p></li>
-
-                <li><p>If |paramName| is an empty string or |params|[|paramName|] [=map/exists=], [=iteration/continue=].</p></li>
-
-                <li><p>Advance <var>position</var> by 1.</p></li>
-
-                <li><p>Let |paramValue| be an empty string.</p></li>
-
-                <li><p>[=Skip ASCII whitespace=] within |rawMetric| given |position|.</p></li>
-
-                <li>
-                  <p>If the [=code point=] at |position| within |rawMetric| is U+0022 ("), then:</p>
-
-                  <ol>
-                    <li><p>>Set |paramValue| to the result of [=collecting an HTTP quoted string=] from
-                    |rawMetric| given <var>position</var> with the extract-value flag set.</p></li>
-
-                    <li><p>[=Collect a sequence of code points=] that are not equal to U+003B (;),
-                    given <var>position</var>. The result is not used.
-                  </ol>
-                </li>
-
-                <li>
-                  <p>Otherwise:</p>
-                  <ol>
-                    <li><p>Let |rawParamValue| be the result of [=collecting a sequence of code points=] from |rawMetric|
-                    that are not equal to U+003B (;), given <var>position</var>.</p></li>
-
-                    <li><p>Let |paramValue| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamValue|.</p></li>
-                  </ol>
-                </li>
+                <li><p>[=Collect a sequence of code points=] that are not equal to U+003B (;),
+                given <var>position</var>. The result is not used.
               </ol>
             </li>
 
-            <li><p>[=map/set=] |metric|'s {{PerformanceServerTiming/params}} to |params|</p></li>
+            <li>
+              <p>Otherwise:</p>
+              <ol>
+                <li><p>Let |rawParamValue| be the result of [=collecting a sequence of code points=] from |rawMetric|
+                that are not equal to U+003B (;), given <var>position</var>.</p></li>
 
-            <li><p>[=list/append|Append=] |metric| to |entries|.</p></li>
+                <li><p>Let |paramValue| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamValue|.</p></li>
+              </ol>
+            </li>
           </ol>
         </li>
 
-        <li><p>Return |list|.</p></li>
+        <li><p>[=map/set=] |metric|'s <a data-for="PerformanceServerTiming">params</a> to |params|</p></li>
+
+        <li><p>[=list/append|Append=] |metric| to |entries|.</p></li>
       </ol>
-    </dd>
-  </dl>
+    </li>
+
+    <li><p>Return |list|.</p></li>
+  </ol>
 </section>
 
 <section>
