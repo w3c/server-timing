@@ -17,7 +17,6 @@
     }, {
       name: "Ilya Grigorik",
       url: "https://www.igvita.com/",
-      mailto: "igrigorik@gmail.com",
       company: "Google",
       companyURL: "https://www.google.com/",
       w3cid: "56102"
@@ -61,7 +60,7 @@
 <section class='informative'>
 ## Introduction
 
-Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING-2]] and [[RESOURCE-TIMING]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
+Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING]] and [[RESOURCE-TIMING]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
 
 This specification introduces {{PerformanceServerTiming}} interface, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
 </section>
@@ -120,13 +119,14 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   };
   ```
 
-  When <dfn>toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON steps=].
+  When <dfn class="export" data-dfn-for="PerformanceServerTiming">toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON steps=].
 
   ### <dfn>name</dfn> attribute
-  The <a>name</a> getter steps are to return <a>this</a>'s {{PerformanceServerTiming/metric name}}.
+  The <a>name</a> getter steps are to return <a>this</a>'s <a data-for=
+  "PerformanceServerTiming">metric name</a>.
 
   ### <dfn>duration</dfn> attribute
-  The <a>duration</a>> getter steps are to do the following:
+  The <a>duration</a> getter steps are to do the following:
   <ol>
     <li><p>If <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] does not [=map/exists|exist=], return 0.</p></li>
 
@@ -136,7 +136,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   </ol>
 
   ### <dfn>description</dfn> attribute
-  The {{description}} getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.
+  The <a>description</a> getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.
 
   A {{PerformanceServerTiming}} has an associated string <dfn>metric name</dfn>, initially set to the empty string.
 
@@ -175,7 +175,8 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 
         <li><p>If |name| is an empty string, [=iteration/continue=].</p></li>
 
-        <li><p>Let |metric| be a new {{PerformanceServerTiming}} whose {{PerformanceServerTiming/metric name}} is |name|.</p></li>
+        <li><p>Let |metric| be a new {{PerformanceServerTiming}} whose <a data-for=
+          "PerformanceServerTiming">metric name</a> is |name|.</p></li>
 
         <li><p>Let |params| be an empty <a data-cite="INFRA#map">map</a>.</p></li>
 
@@ -236,10 +237,10 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 ## Process
 
 ### Processing Model
-<p>When processing the response of the <a data-cite="NAVIGATION-TIMING-2#dfn-current-document">current document</a>, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="NAVIGATION-TIMING-2#step-create-object">newly created</a> `PerformanceNavigationTiming` object to the return value of the [=server-timing header parsing algorithm=]
+<p>When processing the response of the <a data-cite="NAVIGATION-TIMING#dfn-current-document">current document</a>, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="NAVIGATION-TIMING#step-create-object">newly created</a> `PerformanceNavigationTiming` object to the return value of the [=server-timing header parsing algorithm=]
 </p>
 
-<p>For each resource [= fetch | fetched =] by the current [=browsing context=], excluding resources fetched by cross-origin stylesheets fetched with `no-cors` policy, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="RESOURCE-TIMING#step-create-object">newly created</a> {{PerformanceResourceTiming}} object to:
+<p>For each resource [=fetch|fetched=] by the current [=browsing context=], excluding resources fetched by cross-origin stylesheets fetched with `no-cors` policy, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="RESOURCE-TIMING#step-create-object">newly created</a> {{PerformanceResourceTiming}} object to:
   <ol>
     <li>An empty [=sequence=], if the return value from the "timing allow check" algorithm (as defined in [[RESOURCE-TIMING]]) is `fail`.</li>
   <li>An empty [=sequence=], if the user agent chooses to limit their support to <span data-cite="html">[=secure contexts=]</span> and the <a data-cite="RESOURCE-TIMING#dfn-current-document">current document</a>'s [=environment settings object=] is <a data-cite="html" data-lt="non-secure contexts">not contextually secure</a>.</li>
@@ -383,5 +384,5 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 
 <section class='appendix informative'>
   ## Acknowledgments
-  This document reuses text from the [[NAVIGATION-TIMING-2]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE-2]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.
+  This document reuses text from the [[NAVIGATION-TIMING]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE-2]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.
 </section>
