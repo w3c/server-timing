@@ -108,7 +108,7 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   - The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.
 </div>
 
-Tp <dfn>parse a server-timing header field</dfn> given string |field|:
+Tp <dfn>parse a server-timing header field</dfn> given a string |field|:
 
 1. Let |position| be a [=string/position variable=], initially pointing at the start of |field|.
 
@@ -210,7 +210,7 @@ Tp <dfn>parse a server-timing header field</dfn> given string |field|:
 
   1. Let |entries| be a new [=list=].
 
-  1. [=list/iterate|For each=] |field| in <a>this</a>'s <a data-cite="RESOURCE-TIMING#dfn-timing-info">timing info</a>'s [=fetch timing info/server timing headers=]:
+  1. [=list/iterate|For each=] |field| in <a>this</a>'s <a data-cite="RESOURCE-TIMING#dfn-timing-info">timing info</a>'s [ =fetch timing info/server timing headers =]: <!-- TODO: fix link after FETCH PR is merged-->
 
       1. Let |metric| be the result of [=parse a server-timing header field|parsing=] |field|.
 
