@@ -112,7 +112,7 @@ To <dfn>parse a server-timing header field</dfn> given a string |field|:
 
 1. Let |position| be a [=string/position variable=], initially pointing at the start of |field|.
 
-1. Let |name| be the result of [=collecting a sequence of code points=] that are not equal to U+003B (;), given |position|.
+1. Let |name| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003B (;), given |position|.
 
 1. [=Strip leading and trailing ASCII whitespace=] from |name|.
 
@@ -142,7 +142,7 @@ To <dfn>parse a server-timing header field</dfn> given a string |field|:
 
         1. Set |paramValue| to the result of [=collecting an HTTP quoted string=] from |field| given |position| with the <i>extract-value flag</i> set.
 
-        1. [=Collect a sequence of code points=] that are not equal to U+003B (;), given |position|. The result is not used.
+        1. [=Collect a sequence of code points=] from |field| that are not equal to U+003B (;), given |position|. The result is not used.
 
     1. Otherwise:
 
