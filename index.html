@@ -112,9 +112,9 @@ To <dfn>parse a server-timing header field</dfn> given a string |field|:
 
 1. Let |position| be a [=string/position variable=], initially pointing at the start of |field|.
 
-1. Let |rawName| be the result of [=collecting a sequence of code points=] that are not equal to U+003B (;), given |position|.
+1. Let |name| be the result of [=collecting a sequence of code points=] that are not equal to U+003B (;), given |position|.
 
-1. Let |name| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawName|.
+1. [=Strip leading and trailing ASCII whitespace=] from |name|.
 
 1. If |name| is an empty string, return null.
 
@@ -126,9 +126,9 @@ To <dfn>parse a server-timing header field</dfn> given a string |field|:
 
     1. Advance |position| by 1.
 
-    1. Let |rawParamName| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003D (=), given |position|.
+    1. Let |paramName| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003D (=), given |position|.
 
-    1. Let |paramName| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamName|.
+    1. [=Strip leading and trailing ASCII whitespace=] from |paramName|.
 
     1. If |paramName| is an empty string or |params|[|paramName|] [=map/exists=], [=iteration/continue=].
 
