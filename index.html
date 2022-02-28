@@ -118,8 +118,7 @@ To <dfn>parse a server-timing header field</dfn> given a string |field|:
 
 1. If |name| is an empty string, [=iteration/continue=].
 
-1. Let |metric| be a new {{PerformanceServerTiming}} whose <a data-for=
-    "PerformanceServerTiming">metric name</a> is |name|.
+1. Let |metric| be a new {{PerformanceServerTiming}} whose <a data-for="PerformanceServerTiming">metric name</a> is |name|.
 
 1. Let |params| be an empty <a data-cite="INFRA#map">map</a>.
 
@@ -127,8 +126,7 @@ To <dfn>parse a server-timing header field</dfn> given a string |field|:
 
   1. Advance |position| by 1.
 
-  1. Let |rawParamName| be the result of [=collecting a sequence of code points=] from |field|
-    that are not equal to U+003D (=), given |position|.
+  1. Let |rawParamName| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003D (=), given |position|.
 
   1. Let |paramName| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamName|.
 
