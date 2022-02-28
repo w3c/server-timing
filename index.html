@@ -17,6 +17,7 @@
     }, {
       name: "Ilya Grigorik",
       url: "https://www.igvita.com/",
+      mailto: "igrigorik@gmail.com",
       company: "Google",
       companyURL: "https://www.google.com/",
       w3cid: "56102"
@@ -67,6 +68,7 @@ This specification introduces {{PerformanceServerTiming}} interface, which enabl
 
 <section id='conformance'></section>
 
+<section>
 ### The `Server-Timing` Header Field
 
 The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[RFC5234]] syntax for the [=Server-Timing header field=] is as follows:
@@ -106,6 +108,54 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   - The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.
 </div>
 
+Tp <dfn>parse a server-timing header field</dfn> given string |field|:
+
+1. Let |position| be a [=string/position variable=], initially pointing at the start of |field|.
+
+1. Let |rawName| be the result of [=collecting a sequence of code points=] that are not equal to U+003B (;), given |position|.
+
+1. Let |name| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawName|.
+
+1. If |name| is an empty string, [=iteration/continue=].
+
+1. Let |metric| be a new {{PerformanceServerTiming}} whose <a data-for=
+    "PerformanceServerTiming">metric name</a> is |name|.
+
+1. Let |params| be an empty <a data-cite="INFRA#map">map</a>.
+
+1. While |position| is not at the end of |field|:
+
+  1. Advance |position| by 1.
+
+  1. Let |rawParamName| be the result of [=collecting a sequence of code points=] from |field|
+    that are not equal to U+003D (=), given |position|.
+
+  1. Let |paramName| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamName|.
+
+  1. If |paramName| is an empty string or |params|[|paramName|] [=map/exists=], [=iteration/continue=].
+
+  1. Advance |position| by 1.
+
+  1. Let |paramValue| be an empty string.
+
+  1. [=Skip ASCII whitespace=] within |field| given |position|.
+
+  1. If the [=code point=] at |position| within |field| is U+0022 ("), then:
+
+      1. Set |paramValue| to the result of [=collecting an HTTP quoted string=] from |field| given |position| with the extract-value flag set.
+
+      1. [=Collect a sequence of code points=] that are not equal to U+003B (;), given |position|. The result is not used.
+
+  1. Otherwise:
+
+      1. Let |rawParamValue| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003B (;), given |position|.
+
+      1. Let |paramValue| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamValue|.
+
+1. [=map/set|Set=] |metric|'s <a data-for="PerformanceServerTiming">params</a> to |params|.
+
+</section>
+
 <section data-dfn-for="PerformanceServerTiming" data-link-for="PerformanceServerTiming">
   ## The <dfn>PerformanceServerTiming</dfn> Interface
 
@@ -122,18 +172,16 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   When <dfn class="export" data-dfn-for="PerformanceServerTiming">toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON steps=].
 
   ### <dfn>name</dfn> attribute
-  The <a>name</a> getter steps are to return <a>this</a>'s <a data-for=
-  "PerformanceServerTiming">metric name</a>.
+  The <a>name</a> getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">metric name</a>.
 
   ### <dfn>duration</dfn> attribute
   The <a>duration</a> getter steps are to do the following:
-  <ol>
-    <li><p>If <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] does not [=map/exists|exist=], return 0.</p></li>
 
-    <li><p>Let |dur| be the result of parsing <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] using the [=rules for parsing floating-point number values=].</p></li>
+  1. If <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] does not [=map/exists|exist=], return 0.
 
-    <li><p>If |dur| is an error, return 0; Otherwise return |dur|.</p></li>
-  </ol>
+  1. Let |dur| be the result of parsing <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] using the [=rules for parsing floating-point number values=].
+
+  1. If |dur| is an error, return 0; Otherwise return |dur|.
 
   ### <dfn>description</dfn> attribute
   The <a>description</a> getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.
@@ -159,115 +207,16 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   ### <code>serverTiming</code> attribute
 
   The <dfn>serverTiming</dfn> getter steps are the following:
-  <ol>
-    <li><p>Let |entries| be a new [=list=].</p></li>
 
-    <li>
-      <p>[=list/iterate|For each=] |rawMetric| in <a>this</a>'s <a data-cite="RESOURCE-TIMING#dfn-timing-info">timing info</a>'s [=fetch timing info/server timing headerss=]:</p>
+  1. Let |entries| be a new [=list=].
 
-      <ol>
-        <li><p>Let |position| be a [=string/position variable=], initially pointing at the start of |rawMetric|.</p></li>
+  1. [=list/iterate|For each=] |field| in <a>this</a>'s <a data-cite="RESOURCE-TIMING#dfn-timing-info">timing info</a>'s [=fetch timing info/server timing headers=]:
 
-        <li><p>Let |rawName| be the result of [=collecting a sequence of code points=]
-        that are not equal to U+003B (;), given <var>position</var>.
+      1. Let |metric| be the result of [=parse a server-timing header field|parsing=] |field|.
 
-        <li><p>Let |name| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawName|.</p></li>
+      1. If |metric| is not null, [=list/append=] |metric| to |entries|.
 
-        <li><p>If |name| is an empty string, [=iteration/continue=].</p></li>
-
-        <li><p>Let |metric| be a new {{PerformanceServerTiming}} whose <a data-for=
-          "PerformanceServerTiming">metric name</a> is |name|.</p></li>
-
-        <li><p>Let |params| be an empty <a data-cite="INFRA#map">map</a>.</p></li>
-
-        <li>
-          <p>While |position| is not at the end of |rawMetric|:</p>
-
-          <ol>
-            <li><p>Advance <var>position</var> by 1.</p></li>
-
-            <li><p>Let |rawParamName| be the result of [=collecting a sequence of code points=] from |rawMetric|
-            that are not equal to U+003D (=), given <var>position</var>.</p></li>
-
-            <li><p>Let |paramName| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamName|.</p></li>
-
-            <li><p>If |paramName| is an empty string or |params|[|paramName|] [=map/exists=], [=iteration/continue=].</p></li>
-
-            <li><p>Advance <var>position</var> by 1.</p></li>
-
-            <li><p>Let |paramValue| be an empty string.</p></li>
-
-            <li><p>[=Skip ASCII whitespace=] within |rawMetric| given |position|.</p></li>
-
-            <li>
-              <p>If the [=code point=] at |position| within |rawMetric| is U+0022 ("), then:</p>
-
-              <ol>
-                <li><p>>Set |paramValue| to the result of [=collecting an HTTP quoted string=] from
-                |rawMetric| given <var>position</var> with the extract-value flag set.</p></li>
-
-                <li><p>[=Collect a sequence of code points=] that are not equal to U+003B (;),
-                given <var>position</var>. The result is not used.
-              </ol>
-            </li>
-
-            <li>
-              <p>Otherwise:</p>
-              <ol>
-                <li><p>Let |rawParamValue| be the result of [=collecting a sequence of code points=] from |rawMetric|
-                that are not equal to U+003B (;), given <var>position</var>.</p></li>
-
-                <li><p>Let |paramValue| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamValue|.</p></li>
-              </ol>
-            </li>
-          </ol>
-        </li>
-
-        <li><p>[=map/set=] |metric|'s <a data-for="PerformanceServerTiming">params</a> to |params|</p></li>
-
-        <li><p>[=list/append|Append=] |metric| to |entries|.</p></li>
-      </ol>
-    </li>
-
-    <li><p>Return |list|.</p></li>
-  </ol>
-</section>
-
-<section>
-## Process
-
-### Processing Model
-<p>When processing the response of the <a data-cite="NAVIGATION-TIMING#dfn-current-document">current document</a>, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="NAVIGATION-TIMING#step-create-object">newly created</a> `PerformanceNavigationTiming` object to the return value of the [=server-timing header parsing algorithm=]
-</p>
-
-<p>For each resource [=fetch|fetched=] by the current [=browsing context=], excluding resources fetched by cross-origin stylesheets fetched with `no-cors` policy, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="RESOURCE-TIMING#step-create-object">newly created</a> {{PerformanceResourceTiming}} object to:
-  <ol>
-    <li>An empty [=sequence=], if the return value from the "timing allow check" algorithm (as defined in [[RESOURCE-TIMING]]) is `fail`.</li>
-  <li>An empty [=sequence=], if the user agent chooses to limit their support to <span data-cite="html">[=secure contexts=]</span> and the <a data-cite="RESOURCE-TIMING#dfn-current-document">current document</a>'s [=environment settings object=] is <a data-cite="html" data-lt="non-secure contexts">not contextually secure</a>.</li>
-    <li>The return value of the [=server-timing header parsing algorithm=], otherwise.</li>
-  </ol>
-</p>
-
-#### <dfn>server-timing header parsing algorithm</dfn>
-<p>Given a |resource timing object|, perform the following steps:</p>
-
-<ol>
-  <li>Let |entryList| be a new empty [=sequence=].
-  </li>
-  <li>For each server-specified metric received from parsing the [=Server-Timing header field=], perform the following steps:
-    <ol data-link-for="PerformanceServerTiming">
-      <li>Let |entry:PerformanceServerTiming| be a new {{PerformanceServerTiming}} object.</li>
-      <li>Set {{name}} to metric-name.</li>
-      <li>Set {{duration}} to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "dur", or value 0 if omitted or not representable as a double.</li>
-      <li>Set {{description}} to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "desc", or an empty string if omitted.</li>
-      <li>Append |entry| to |entryList|.
-      </li>
-    </ol>
-  </li>
-  <li>Return |entryList|</li>
-</ol>
-
-<p>The user-agent MAY process [=Server-Timing header field=] communicated via a trailer field (see [[RFC7230]] section 4.1.2) using the same algorithm.</p>
+  1. Return |list|.
 </section>
 
 <section class='informative'>
