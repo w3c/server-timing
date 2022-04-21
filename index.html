@@ -17,18 +17,18 @@
     }, {
       name: "Ilya Grigorik",
       url: "https://www.igvita.com/",
-      mailto: "igrigorik@gmail.com",
       company: "Google",
       companyURL: "https://www.google.com/",
       w3cid: "56102"
     }],
+    group:"webperf",
     wg: "Web Performance Working Group",
     wgURI: "https://www.w3.org/webperf/",
     wgPublicList: "public-web-perf",
     subjectPrefix: "[server-timing]",
     license: 'w3c-software-doc',
     format: "markdown",
-    xref: ["webidl", "fetch", "secure-contexts", "html", "hr-time"],
+    xref: ["webidl", "fetch", "secure-contexts", "html", "hr-time", "infra"],
     github: "https://github.com/w3c/server-timing/",
     otherLinks: [{
       key: 'Mailing list',
@@ -61,13 +61,14 @@
 <section class='informative'>
 ## Introduction
 
-Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING-2]] and [[RESOURCE-TIMING-2]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
+Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING]] and [[RESOURCE-TIMING]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
 
 This specification introduces {{PerformanceServerTiming}} interface, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
 </section>
 
 <section id='conformance'></section>
 
+<section>
 ### The `Server-Timing` Header Field
 
 The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[RFC5234]] syntax for the [=Server-Timing header field=] is as follows:
@@ -107,6 +108,53 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   - The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.
 </div>
 
+To <dfn>parse a server-timing header field</dfn> given a string |field|:
+
+1. Let |position| be a [=string/position variable=], initially pointing at the start of |field|.
+
+1. Let |name| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003B (;), given |position|.
+
+1. [=Strip leading and trailing ASCII whitespace=] from |name|.
+
+1. If |name| is an empty string, return null.
+
+1. Let |metric| be a new {{PerformanceServerTiming}} whose <a data-for="PerformanceServerTiming">metric name</a> is |name|.
+
+1. Let |params| be an empty <a data-cite="INFRA#map">map</a>.
+
+1. While |position| is not at the end of |field|:
+
+    1. Advance |position| by 1.
+
+    1. Let |paramName| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003D (=), given |position|.
+
+    1. [=Strip leading and trailing ASCII whitespace=] from |paramName|.
+
+    1. If |paramName| is an empty string or |params|[|paramName|] [=map/exists=], [=iteration/continue=].
+
+    1. Advance |position| by 1.
+
+    1. Let |paramValue| be an empty string.
+
+    1. [=Skip ASCII whitespace=] within |field| given |position|.
+
+    1. If the [=code point=] at |position| within |field| is U+0022 ("), then:
+
+        1. Set |paramValue| to the result of [=collecting an HTTP quoted string=] from |field| given |position| with the <i>extract-value flag</i> set.
+
+        1. [=Collect a sequence of code points=] from |field| that are not equal to U+003B (;), given |position|. The result is not used.
+
+    1. Otherwise:
+
+        1. Let |rawParamValue| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003B (;), given |position|.
+
+        1. Let |paramValue| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamValue|.
+
+1. [=map/set|Set=] |metric|'s <a data-for="PerformanceServerTiming">params</a> to |params|.
+
+1. Return |metric|.
+</section>
+
 <section data-dfn-for="PerformanceServerTiming" data-link-for="PerformanceServerTiming">
   ## The <dfn>PerformanceServerTiming</dfn> Interface
 
@@ -120,23 +168,33 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   };
   ```
 
-  When <dfn>toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON steps=].
+  When <dfn class="export" data-dfn-for="PerformanceServerTiming">toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON steps=].
 
   ### <dfn>name</dfn> attribute
-  The {{name}} attribute MUST return the DOMString value of the server-specified metric name.
+  The <a>name</a> getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">metric name</a>.
 
   ### <dfn>duration</dfn> attribute
-  The {{duration}} attribute MUST return a double that contains the server-specified metric duration, or value `0.0`.
+  The <a>duration</a> getter steps are to do the following:
+
+  1. If <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] does not [=map/exists|exist=], return 0.
+
+  1. Let |dur| be the result of parsing <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] using the [=rules for parsing floating-point number values=].
+
+  1. If |dur| is an error, return 0; Otherwise return |dur|.
 
   ### <dfn>description</dfn> attribute
-  The {{description}} attribute MUST return the DOMString value of the server-specified metric description, or an empty string.
+  The <a>description</a> getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.
+
+  A {{PerformanceServerTiming}} has an associated string <dfn>metric name</dfn>, initially set to the empty string.
+
+  A {{PerformanceServerTiming}} has an associated <a data-cite="INFRA#map">map</a> <dfn>params</dfn>, initially empty.
 </section>
 
 <!-- TODO: How do extend and cross-reference the interface? -->
 <section data-dfn-for="PerformanceResourceTiming" data-link-for="PerformanceResourceTiming">
   ### Extension to the {{PerformanceResourceTiming}} interface
 
-  The <dfn data-cite="RESOURCE-TIMING-2#performanceresourcetiming">PerformanceResourceTiming</dfn> interface, which this specification partially extends, is defined in [[RESOURCE-TIMING-2]].
+  The <dfn data-cite="RESOURCE-TIMING#performanceresourcetiming">PerformanceResourceTiming</dfn> interface, which this specification partially extends, is defined in [[RESOURCE-TIMING]].
 
   ``` webidl
   [Exposed=(Window,Worker)]
@@ -145,51 +203,25 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
   };
   ```
 
-  ### <dfn>serverTiming</dfn> attribute
-  The {{serverTiming}} attribute returns a sequence of {{PerformanceServerTiming}} entries.
-</section>
+  ### <code>serverTiming</code> attribute
 
-<section>
-## Process
+  The <dfn>serverTiming</dfn> getter steps are the following:
 
-### Processing Model
-<p>When processing the response of the <a data-cite="NAVIGATION-TIMING-2#dfn-current-document">current document</a>, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="NAVIGATION-TIMING-2#step-create-object">newly created</a> `PerformanceNavigationTiming` object to the return value of the [=server-timing header parsing algorithm=]
-</p>
+  1. Let |entries| be a new [=list=].
 
-<p>For each resource [= fetch | fetched =] by the current [=browsing context=], excluding resources fetched by cross-origin stylesheets fetched with `no-cors` policy, set the {{PerformanceResourceTiming/serverTiming}} attribute on the <a data-cite="RESOURCE-TIMING-2#step-create-object">newly created</a> {{PerformanceResourceTiming}} object to:
-  <ol>
-    <li>An empty [=sequence=], if the return value from the "timing allow check" algorithm (as defined in [[RESOURCE-TIMING-2]]) is `fail`.</li>
-  <li>An empty [=sequence=], if the user agent chooses to limit their support to <span data-cite="html">[=secure contexts=]</span> and the <a data-cite="resource-timing-2#dfn-current-document">current document</a>'s [=environment settings object=] is <a data-cite="html" data-lt="non-secure contexts">not contextually secure</a>.</li>
-    <li>The return value of the [=server-timing header parsing algorithm=], otherwise.</li>
-  </ol>
-</p>
+  1. [=list/iterate|For each=] |field| in <a>this</a>'s <a data-cite="RESOURCE-TIMING#dfn-timing-info">timing info</a>'s [=fetch timing info/server-timing headers=]:
 
-#### <dfn>server-timing header parsing algorithm</dfn>
-<p>Given a |resource timing object|, perform the following steps:</p>
+      1. Let |metric| be the result of [=parse a server-timing header field|parsing=] |field|.
 
-<ol>
-  <li>Let |entryList| be a new empty [=sequence=].
-  </li>
-  <li>For each server-specified metric received from parsing the [=Server-Timing header field=], perform the following steps:
-    <ol data-link-for="PerformanceServerTiming">
-      <li>Let |entry:PerformanceServerTiming| be a new {{PerformanceServerTiming}} object.</li>
-      <li>Set {{name}} to metric-name.</li>
-      <li>Set {{duration}} to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "dur", or value 0 if omitted or not representable as a double.</li>
-      <li>Set {{description}} to the server-timing-param-value for the server-timing-param where server-timing-param-name is case-insensitively equal to "desc", or an empty string if omitted.</li>
-      <li>Append |entry| to |entryList|.
-      </li>
-    </ol>
-  </li>
-  <li>Return |entryList|</li>
-</ol>
+      1. If |metric| is not null, [=list/append=] |metric| to |entries|.
 
-<p>The user-agent MAY process [=Server-Timing header field=] communicated via a trailer field (see [[RFC7230]] section 4.1.2) using the same algorithm.</p>
+  1. Return |entries|.
 </section>
 
 <section class='informative'>
   ## Privacy and Security
 
-  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the [=same origin=] policy by default. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING-2]], that specifies the domains that are allowed to access the server metrics.
+  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the [=same origin=] policy by default. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], that specifies the domains that are allowed to access the server metrics.
 
   In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.
 </section>
@@ -300,5 +332,5 @@ User agents MUST ignore extraneous characters found after a `metric-name` but be
 
 <section class='appendix informative'>
   ## Acknowledgments
-  This document reuses text from the [[NAVIGATION-TIMING-2]], [[RESOURCE-TIMING-2]], [[PERFORMANCE-TIMELINE-2]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.
+  This document reuses text from the [[NAVIGATION-TIMING]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE-2]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.
 </section>
