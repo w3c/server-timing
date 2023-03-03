@@ -221,7 +221,7 @@ To <dfn>parse a server-timing header field</dfn> given a string |field|:
 <section class='informative'>
   ## Privacy and Security
 
-  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the [=same origin=] policy by default. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], that specifies the domains that are allowed to access the server metrics.
+  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the [=same origin=] policy by default. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], that specifies the domains that may be allowed to access the server metrics, but the user agent MAY keep the [=same origin=] policy restriction.
 
   In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.
 </section>
