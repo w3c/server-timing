@@ -182,6 +182,12 @@ To <dfn>parse a server-timing header field</dfn> given a string |field|:
 
   1. If |dur| is an error, return 0; Otherwise return |dur|.
 
+  <p class="note">
+    Since <a>duration</a> is a {{DOMHighResTimeStamp}}, it usually represents a [=duration=] in
+    milliseconds. Since this is not enforcable in practice, <a>duration</a> can represent any unit
+    of time, and having it represent a [=duration=] in milliseconds is a recommendation.
+  </p>
+
   ### <dfn>description</dfn> attribute
   The <a>description</a> getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.
 
