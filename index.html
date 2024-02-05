@@ -159,7 +159,7 @@ To <dfn>parse a server-timing header field</dfn> given a string |field|:
   ## The <dfn>PerformanceServerTiming</dfn> Interface
 
   ``` webidl
-  [Exposed=(Window,Worker)]
+  [Exposed=(Window,Worker), SecureContext]
   interface PerformanceServerTiming {
     readonly attribute DOMString name;
     readonly attribute DOMHighResTimeStamp duration;
