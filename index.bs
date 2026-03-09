@@ -5,8 +5,9 @@ Status: ED
 Group: webperf
 URL: https://w3c.github.io/server-timing/
 TR: https://www.w3.org/TR/server-timing/
-Editor: Charles Vazac, Akamai https://www.akamai.com/, cvazac@gmail.com, w3cid 77116
-Editor: Ilya Grigorik, Google https://www.google.com/, https://www.igvita.com/, w3cid 56102
+Editor: Yoav Weiss, Shopify https://shopify.com/, https://blog.yoav.ws/, w3cid 58673
+Former Editor: Charles Vazac, Akamai https://www.akamai.com/, cvazac@gmail.com, w3cid 77116
+Former Editor: Ilya Grigorik, Google https://www.google.com/, https://www.igvita.com/, w3cid 56102
 Repository: w3c/server-timing
 Mailing List: public-web-perf@w3.org
 Mailing List Archives: https://lists.w3.org/Archives/Public/public-web-perf/
