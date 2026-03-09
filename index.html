@@ -1,343 +1,2534 @@
-<!DOCTYPE html>
-<head>
+<!doctype html><html lang="en">
+ <head>
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
   <title>Server Timing</title>
-  <meta charset='utf-8'>
-  <meta name="color-scheme" content="light dark">
-  <script src='https://www.w3.org/Tools/respec/respec-w3c' async class='remove'></script>
-  <script class='remove'>
-  var respecConfig = {
-    shortName: "server-timing",
-    specStatus: "ED",
-    edDraftURI: "https://w3c.github.io/server-timing/",
-    editors: [{
-      name: "Charles Vazac",
-      mailto: "cvazac@gmail.com",
-      company: "Akamai",
-      companyURL: "https://www.akamai.com/",
-      w3cid: "77116"
-    }, {
-      name: "Ilya Grigorik",
-      url: "https://www.igvita.com/",
-      company: "Google",
-      companyURL: "https://www.google.com/",
-      w3cid: "56102"
-    }],
-    group:"webperf",
-    wg: "Web Performance Working Group",
-    wgURI: "https://www.w3.org/webperf/",
-    wgPublicList: "public-web-perf",
-    subjectPrefix: "[server-timing]",
-    license: 'w3c-software-doc',
-    format: "markdown",
-    xref: ["webidl", "fetch", "secure-contexts", "html", "hr-time", "infra"],
-    github: "https://github.com/w3c/server-timing/",
-    otherLinks: [{
-      key: 'Mailing list',
-      data: [{
-        value: 'public-web-perf@w3.org',
-        href: 'https://lists.w3.org/Archives/Public/public-web-perf/'
-      }]
-    },{
-      key: 'Implementation',
-      data: [{
-        value: 'Test Suite',
-        href: 'http://w3c-test.org/server-timing/'
-      }, {
-        value: 'Test Suite repository',
-        href: 'https://github.com/web-platform-tests/wpt/tree/master/server-timing'
-      }]
-    }],
-    wgPatentURI:  "https://www.w3.org/2004/01/pp-impl/45211/status"
-  };
-  </script>
-</head>
-
-<section id='abstract'>
-  This specification enables a server to communicate performance metrics about the request-response cycle to the user agent. It also standardizes a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
-</section>
-
-<section id='sotd'>
-</section>
-
-<section class='informative'>
-## Introduction
-
-Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. [[NAVIGATION-TIMING]] and [[RESOURCE-TIMING]] provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
-
-This specification introduces {{PerformanceServerTiming}} interface, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
-</section>
-
-<section id='conformance'></section>
-
-<section>
-### The `Server-Timing` Header Field
-
-The <dfn>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[RFC5234]] syntax for the [=Server-Timing header field=] is as follows:
-
-```ABNF
-  Server-Timing             = #server-timing-metric
-  server-timing-metric      = metric-name *( OWS ";" OWS server-timing-param )
-  metric-name               = token
-  server-timing-param       = server-timing-param-name OWS "=" OWS server-timing-param-value
-  server-timing-param-name  = token
-  server-timing-param-value = token / quoted-string
-```
-
-See [[RFC7230]] for definitions of `#`, `*`, `OWS`, `token`, and `quoted-string`.
-
-A response MAY have multiple server-timing-metric entries with the same metric-name, and the user agent MUST process and expose all such entries.
-
-The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.
-
-This header field is defined with an extensible syntax to allow for future parameters. A user agent that does not recognize particular server-timing-param-name in the Server-Timing header field of a response MUST ignore those tokens and continue processing instead of signaling an error.
-
-To avoid any possible ambiguity, individual `server-timing-param-name`s SHOULD NOT appear multiple times within a `server-timing-metric`. If any `server-timing-param-name` is specified more than once, only the first instance is to be considered, even if the `server-timing-param` is incomplete or invalid. All subsequent occurrences MUST be ignored without signaling an error or otherwise altering the processing of the `server-timing-metric`. This is the only case in which the ordering of parameters within a `server-timing-metric` is considered to be significant.
-
-User agents MUST ignore extraneous characters found after a `server-timing-param-value` but before the next `server-timing-param` and before the end of the current `server-timing-metric`.
-
-User agents MUST ignore extraneous characters found after a `metric-name` but before the first `server-timing-param` and before the next `server-timing-metric`.
-
-<p data-link-for="PerformanceServerTiming">
-  This specification establishes the server-timing-params for server-timing-param-names "dur" for {{duration}} and "desc" for {{description}}, both optional.
-</p>
-
-<div class="note">
-  - To minimize the HTTP overhead the provided names and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.
-
-  - Because there can be no guarantee of clock synchronization between client, server, and intermediaries, it is impossible to map a meaningful `startTime` onto the clients timeline. For that reason, any `startTime` attribution is purposely omitted from this specification. If the developers want to establish a relationship between multiple entries, they can do so by communicating custom data via metric names and/or descriptions.
-
-  - The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security"></a> section.
-</div>
-
-To <dfn>parse a server-timing header field</dfn> given a string |field|:
-
-1. Let |position| be a [=string/position variable=], initially pointing at the start of |field|.
-
-1. Let |name| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003B (;), given |position|.
-
-1. [=Strip leading and trailing ASCII whitespace=] from |name|.
-
-1. If |name| is an empty string, return null.
-
-1. Let |metric| be a new {{PerformanceServerTiming}} whose <a data-for="PerformanceServerTiming">metric name</a> is |name|.
-
-1. Let |params| be an empty <a>ordered map</a>.
-
-1. While |position| is not at the end of |field|:
-
-    1. Advance |position| by 1.
-
-    1. Let |paramName| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003D (=), given |position|.
-
-    1. [=Strip leading and trailing ASCII whitespace=] from |paramName|.
-
-    1. If |paramName| is an empty string or |params|[|paramName|] [=map/exists=], [=iteration/continue=].
-
-    1. Advance |position| by 1.
-
-    1. Let |paramValue| be an empty string.
-
-    1. [=Skip ASCII whitespace=] within |field| given |position|.
-
-    1. If the [=code point=] at |position| within |field| is U+0022 ("), then:
-
-        1. Set |paramValue| to the result of [=collecting an HTTP quoted string=] from |field| given |position| with the <i>extract-value flag</i> set.
-
-        1. [=Collect a sequence of code points=] from |field| that are not equal to U+003B (;), given |position|. The result is not used.
-
-    1. Otherwise:
-
-        1. Let |rawParamValue| be the result of [=collecting a sequence of code points=] from |field| that are not equal to U+003B (;), given |position|.
-
-        1. Let |paramValue| be the result of [=strip leading and trailing ASCII whitespace|stripping=] |rawParamValue|.
-
-1. [=map/set|Set=] |metric|'s <a data-for="PerformanceServerTiming">params</a> to |params|.
-
-1. Return |metric|.
-</section>
-
-<section data-dfn-for="PerformanceServerTiming" data-link-for="PerformanceServerTiming">
-  ## The <dfn>PerformanceServerTiming</dfn> Interface
-
-  ``` webidl
-  [Exposed=(Window,Worker)]
-  interface PerformanceServerTiming {
-    readonly attribute DOMString name;
-    readonly attribute DOMHighResTimeStamp duration;
-    readonly attribute DOMString description;
-    [Default] object toJSON();
-  };
-  ```
-
-  When <dfn class="export" data-dfn-for="PerformanceServerTiming">toJSON</dfn> is called, run [[WEBIDL]]'s [=default toJSON steps=].
-
-  ### <dfn>name</dfn> attribute
-  The <a>name</a> getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">metric name</a>.
-
-  ### <dfn>duration</dfn> attribute
-  The <a>duration</a> getter steps are to do the following:
-
-  1. If <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] does not [=map/exists|exist=], return 0.
-
-  1. Let |dur| be the result of parsing <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"dur"</code>] using the [=rules for parsing floating-point number values=].
-
-  1. If |dur| is an error, return 0; Otherwise return |dur|.
-
-  <p class="note">
-    Since <a>duration</a> is a {{DOMHighResTimeStamp}}, it usually represents a [=duration=] in
-    milliseconds. Since this is not enforcable in practice, <a>duration</a> can represent any unit
-    of time, and having it represent a [=duration=] in milliseconds is a recommendation.
-  </p>
-
-  ### <dfn>description</dfn> attribute
-  The <a>description</a> getter steps are to return <a>this</a>'s <a data-for="PerformanceServerTiming">params</a>[<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.
-
-  A {{PerformanceServerTiming}} has an associated string <dfn>metric name</dfn>, initially set to the empty string.
-
-  A {{PerformanceServerTiming}} has an associated <a>ordered map</a> <dfn>params</dfn>, initially empty.
-</section>
-
-<!-- TODO: How do extend and cross-reference the interface? -->
-<section data-dfn-for="PerformanceResourceTiming" data-link-for="PerformanceResourceTiming">
-  ### Extension to the {{PerformanceResourceTiming}} interface
-
-  The {{PerformanceResourceTiming}} interface, which this specification partially extends, is defined in [[RESOURCE-TIMING]].
-
-  ``` webidl
-  [Exposed=(Window,Worker)]
-  partial interface PerformanceResourceTiming {
-    readonly attribute FrozenArray&lt;PerformanceServerTiming&gt; serverTiming;
-  };
-  ```
-
-  ### <code>serverTiming</code> attribute
-
-  The <dfn>serverTiming</dfn> getter steps are the following:
-
-  1. Let |entries| be a new [=list=].
-
-  1. [=list/iterate|For each=] |field| in <a>this</a>'s <a data-cite="RESOURCE-TIMING#dfn-timing-info">timing info</a>'s [=fetch timing info/server-timing headers=]:
-
-      1. Let |metric| be the result of [=parse a server-timing header field|parsing=] |field|.
-
-      1. If |metric| is not null, [=list/append=] |metric| to |entries|.
-
-  1. Return |entries|.
-</section>
-
-<section class='informative'>
-  ## Privacy and Security
-
-  The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to `PerformanceServerTiming` interface is restricted by the [=same origin=] policy by default. Resource providers can explicitly allow server timing information to be available by adding the `Timing-Allow-Origin` HTTP response header, as defined in [[RESOURCE-TIMING]], that specifies the domains that may be allowed to access the server metrics, but the user agent MAY keep the [=same origin=] policy restriction.
-
-  In addition to using the `Timing-Allow-Origin` HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.
-</section>
-
-<section>
-  ## IANA Considerations
-  The permanent message header field registry should be updated with the following registrations ([[RFC3864]]):
-
-  ### Server-Timing Header Field
-  <dl>
-    <dt>Header field name</dt>
-    <dd>Server-Timing</dd>
-    <dt>Applicable protocol</dt>
-    <dd>http</dd>
-    <dt>Status</dt>
-    <dd>standard</dd>
-    <dt>Author/Change controller</dt>
-    <dd>W3C</dd>
-    <dt>Specification document</dt>
-    <dd>This specification (See [=Server-Timing Header Field=])</dd>
-  </dl>
-</section>
-
-<section class='appendix informative'>
-  ## Examples
-
-  <pre class="example http">
-    &gt; GET /resource HTTP/1.1
-    &gt; Host: example.com
-    <br>
-    &lt; HTTP/1.1 200 OK
-    &lt; Server-Timing: miss, db;dur=53, app;dur=47.2
-    &lt; Server-Timing: customView, dc;desc=atl
-    &lt; Server-Timing: cache;desc="Cache Read";dur=23.2
-    &lt; Trailer: Server-Timing
-    &lt; (... snip response body ...)
-    &lt; Server-Timing: total;dur=123.4
-  </pre>
-
-  <table class="parameters">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Duration</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td>miss</td><td></td><td></td></tr>
-      <tr><td>db</td><td>53</td><td></td></tr>
-      <tr><td>app</td><td>47.2</td><td></td></tr>
-      <tr><td>customView</td><td></td><td></td></tr>
-      <tr><td>dc</td><td></td><td>atl</td></tr>
-      <tr><td>cache</td><td>23.2</td><td>Cache Read</td></tr>
-      <tr><td>total</td><td>123.4</td><td></td></tr>
-    </tbody>
-  </table>
-
-  <p>The above header fields communicate six distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for `example.com/resource.jpg` fetch:</p>
-
-  <ol>
-    <li>There was a cache miss.</li>
-    <li>The request was routed through the "atl" datacenter ("dc").</li>
-    <li>The database ("db") time was 53 ms.</li>
-    <li>A cache read took 23.2 ms.</li>
-    <li>The application server ("app") took 47.2ms to process "customView" template or function.</li>
-    <li>The total time for the request-response cycle on the server was 123.4ms, which is recorded at the end of the response and delivered via a trailer field.</li>
-  </ol>
-
-  <p>The application can collect, process, and act on the provided metrics via the provided JavaScript interface:</p>
-
-  <pre class="example js">
-    // serverTiming entries can live on 'navigation' and 'resource' entries
-    for (const entryType of ['navigation', 'resource']) {
-      for (const {name: url, serverTiming} of performance.getEntriesByType(entryType)) {
-        // iterate over the serverTiming array
-        for (const {name, duration, description} of serverTiming) {
-          // we only care about "slow" ones
-          if (duration > 200) {
-            console.info('Slow server-timing entry =',
-              JSON.stringify({url, entryType, name, duration, description}, null, 2))
-          }
-        }
-      }
+  <meta content="ED" name="w3c-status">
+  <link href="https://www.w3.org/StyleSheets/TR/2021/W3C-ED" rel="stylesheet">
+  <meta content="Bikeshed version 0ef803fdf, updated Tue Jan 6 11:59:39 2026 -0800" name="generator">
+  <link href="https://www.w3.org/TR/server-timing/" rel="canonical">
+  <meta content="c9ecd67bec1f8fe2f68a74dc4ffd589c39e037bd" name="revision">
+  <meta content="dark light" name="color-scheme">
+  <link href="https://www.w3.org/StyleSheets/TR/2021/dark.css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css">
+<style>
+.note:not(.no-marker)::before {
+  content: "Note";
+}
+</style>
+<style>/* Boilerplate: style-autolinks */
+.css.css, .property.property, .descriptor.descriptor {
+    color: var(--a-normal-text);
+    font-size: inherit;
+    font-family: inherit;
+}
+.css::before, .property::before, .descriptor::before {
+    content: "‘";
+}
+.css::after, .property::after, .descriptor::after {
+    content: "’";
+}
+.property, .descriptor {
+    /* Don't wrap property and descriptor names */
+    white-space: nowrap;
+}
+.type { /* CSS value <type> */
+    font-style: italic;
+}
+pre .property::before, pre .property::after {
+    content: "";
+}
+[data-link-type="property"]::before,
+[data-link-type="propdesc"]::before,
+[data-link-type="descriptor"]::before,
+[data-link-type="value"]::before,
+[data-link-type="function"]::before,
+[data-link-type="at-rule"]::before,
+[data-link-type="selector"]::before,
+[data-link-type="maybe"]::before {
+    content: "‘";
+}
+[data-link-type="property"]::after,
+[data-link-type="propdesc"]::after,
+[data-link-type="descriptor"]::after,
+[data-link-type="value"]::after,
+[data-link-type="function"]::after,
+[data-link-type="at-rule"]::after,
+[data-link-type="selector"]::after,
+[data-link-type="maybe"]::after {
+    content: "’";
+}
+
+[data-link-type].production::before,
+[data-link-type].production::after,
+.prod [data-link-type]::before,
+.prod [data-link-type]::after {
+    content: "";
+}
+
+[data-link-type=element],
+[data-link-type=element-attr] {
+    font-family: Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: .9em;
+}
+[data-link-type=element]::before { content: "<" }
+[data-link-type=element]::after  { content: ">" }
+
+[data-link-type=biblio] {
+    white-space: pre;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --selflink-text: black;
+        --selflink-bg: silver;
+        --selflink-hover-text: white;
     }
-  </pre>
-</section>
-<section class='appendix informative'>
-  ## Use cases
+}
+</style>
+<style>/* Boilerplate: style-colors */
+/* Any --*-text not paired with a --*-bg is assumed to have a transparent bg */
+:root {
+    color-scheme: light dark;
 
-  ### Server timing in developer tools
-  Server processing time can be a significant fraction of the total request time. For example, a dynamic response may require one or more database queries, cache lookups, API calls, time to process relevant data and render the response, and so on. Similarly, even a static response can be delayed due to overloaded servers, slow caches, or other reasons.
+    --text: black;
+    --bg: white;
 
-  Today, the user agent developer tools are able to show when the request was initiated, and when the first and last bytes of the response were received. However, there is no visibility into where or how the time was spent on the server, which means that the developer is unable to quickly diagnose if there is a performance bottleneck on the server, and if so, in which component. Today, to answer this question, the developer is required to use different techniques: check the server logs, embed performance data within the response (if possible), use external tools, and so on. This makes identifying and diagnosing performance bottlenecks hard, and in many cases impractical.
+    --unofficial-watermark: url(https://www.w3.org/StyleSheets/TR/2016/logos/UD-watermark);
 
-  Server Timing defines a standard mechanism that enables the server to communicate relevant performance metrics to the client and allows the client to surface them directly in the developer tools - e.g. the requests can be annotated with server sent metrics to provide insight into where or how the time was spent while generating the response.
+    --logo-bg: #1a5e9a;
+    --logo-active-bg: #c00;
+    --logo-text: white;
 
-  ### Server timing for automated analytics
-  In addition to surfacing server sent performance metrics in the developer tools, a standard JavaScript interface enables analytics tools to automatically collect, process, beacon, and aggregate these metrics for operational and performance analysis.
+    --tocnav-normal-text: #707070;
+    --tocnav-normal-bg: var(--bg);
+    --tocnav-hover-text: var(--tocnav-normal-text);
+    --tocnav-hover-bg: #f8f8f8;
+    --tocnav-active-text: #c00;
+    --tocnav-active-bg: var(--tocnav-normal-bg);
 
-  ### Measuring request routing performance
-  Server Timing enables origin servers to communicate performance metrics about where or how time is spent while processing the request. However, the same request and response may also be routed through one or more multiple proxies (e.g. cache servers, load balancers, and so on), each of which may introduce own delays and may want to provide performance metrics into where or how the time is spent.
+    --tocsidebar-text: var(--text);
+    --tocsidebar-bg: #f7f8f9;
+    --tocsidebar-shadow: rgba(0,0,0,.1);
+    --tocsidebar-heading-text: hsla(203,20%,40%,.7);
 
-  For example, a CDN edge node may want to report which data center was being used, if the resource was available in cache, and how long it took to retrieve the response from cache or from the origin server. Further, the same process may be repeated by other proxies, thus allowing full end-to-end visibility into how the request was routed and where the time was spent.
+    --toclink-text: var(--text);
+    --toclink-underline: #3980b5;
+    --toclink-visited-text: var(--toclink-text);
+    --toclink-visited-underline: #054572;
 
-  Similarly, when a Service Worker is active, some or all of the navigation and resource requests may be routed through it. Effectively, an active Service Worker is a local proxy that is able to reroute requests, serve cached responses, synthesize responses, and more. As a result, Server Timing enables Service Worker to report custom performance metrics about how the request was processed: whether it was fetched from a server or served from local cache, duration of relevant the processing steps, and so on.
-</section>
+    --heading-text: #005a9c;
 
-<section class='appendix informative'>
-  ## Acknowledgments
-  This document reuses text from the [[NAVIGATION-TIMING]], [[RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE-2]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.
-</section>
+    --hr-text: var(--text);
+
+    --algo-border: #def;
+
+    --del-text: red;
+    --del-bg: transparent;
+    --ins-text: #080;
+    --ins-bg: transparent;
+
+    --a-normal-text: #034575;
+    --a-normal-underline: #bbb;
+    --a-visited-text: var(--a-normal-text);
+    --a-visited-underline: #707070;
+    --a-hover-bg: rgba(75%, 75%, 75%, .25);
+    --a-active-text: #c00;
+    --a-active-underline: #c00;
+
+    --blockquote-border: silver;
+    --blockquote-bg: transparent;
+    --blockquote-text: currentcolor;
+
+    --issue-border: #e05252;
+    --issue-bg: #fbe9e9;
+    --issue-text: var(--text);
+    --issueheading-text: #831616;
+
+    --example-border: #e0cb52;
+    --example-bg: #fcfaee;
+    --example-text: var(--text);
+    --exampleheading-text: #574b0f;
+
+    --note-border: #52e052;
+    --note-bg: #e9fbe9;
+    --note-text: var(--text);
+    --noteheading-text: hsl(120, 70%, 30%);
+    --notesummary-underline: silver;
+
+    --assertion-border: #aaa;
+    --assertion-bg: #eee;
+    --assertion-text: black;
+
+    --advisement-border: orange;
+    --advisement-bg: #fec;
+    --advisement-text: var(--text);
+    --advisementheading-text: #b35f00;
+
+    --warning-border: red;
+    --warning-bg: hsla(40,100%,50%,0.95);
+    --warning-text: var(--text);
+
+    --amendment-border: #330099;
+    --amendment-bg: #F5F0FF;
+    --amendment-text: var(--text);
+    --amendmentheading-text: #220066;
+
+    --def-border: #8ccbf2;
+    --def-bg: #def;
+    --def-text: var(--text);
+    --defrow-border: #bbd7e9;
+
+    --datacell-border: silver;
+
+    --indexinfo-text: #707070;
+
+    --indextable-hover-text: black;
+    --indextable-hover-bg: #f7f8f9;
+
+    --outdatedspec-bg: rgba(0, 0, 0, .5);
+    --outdatedspec-text: black;
+    --outdated-bg: maroon;
+    --outdated-text: white;
+    --outdated-shadow: red;
+
+    --editedrec-bg: darkorange;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text: #ddd;
+        --bg: black;
+
+        --unofficial-watermark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cg fill='%23100808' transform='translate(200 200) rotate(-45) translate(-200 -200)' stroke='%23100808' stroke-width='3'%3E%3Ctext x='50%25' y='220' style='font: bold 70px sans-serif; text-anchor: middle; letter-spacing: 6px;'%3EUNOFFICIAL%3C/text%3E%3Ctext x='50%25' y='305' style='font: bold 70px sans-serif; text-anchor: middle; letter-spacing: 6px;'%3EDRAFT%3C/text%3E%3C/g%3E%3C/svg%3E");
+
+        --logo-bg: #1a5e9a;
+        --logo-active-bg: #c00;
+        --logo-text: white;
+
+        --tocnav-normal-text: #999;
+        --tocnav-normal-bg: var(--bg);
+        --tocnav-hover-text: var(--tocnav-normal-text);
+        --tocnav-hover-bg: #080808;
+        --tocnav-active-text: #f44;
+        --tocnav-active-bg: var(--tocnav-normal-bg);
+
+        --tocsidebar-text: var(--text);
+        --tocsidebar-bg: #080808;
+        --tocsidebar-shadow: rgba(255,255,255,.1);
+        --tocsidebar-heading-text: hsla(203,20%,40%,.7);
+
+        --toclink-text: var(--text);
+        --toclink-underline: #6af;
+        --toclink-visited-text: var(--toclink-text);
+        --toclink-visited-underline: #054572;
+
+        --heading-text: #8af;
+
+        --hr-text: var(--text);
+
+        --algo-border: #456;
+
+        --del-text: #f44;
+        --del-bg: transparent;
+        --ins-text: #4a4;
+        --ins-bg: transparent;
+
+        --a-normal-text: #6af;
+        --a-normal-underline: #555;
+        --a-visited-text: var(--a-normal-text);
+        --a-visited-underline: var(--a-normal-underline);
+        --a-hover-bg: rgba(25%, 25%, 25%, .2);
+        --a-active-text: #f44;
+        --a-active-underline: var(--a-active-text);
+
+        --borderedblock-bg: rgba(255, 255, 255, .05);
+
+        --blockquote-border: silver;
+        --blockquote-bg: var(--borderedblock-bg);
+        --blockquote-text: currentcolor;
+
+        --issue-border: #e05252;
+        --issue-bg: var(--borderedblock-bg);
+        --issue-text: var(--text);
+        --issueheading-text: hsl(0deg, 70%, 70%);
+
+        --example-border: hsl(50deg, 90%, 60%);
+        --example-bg: var(--borderedblock-bg);
+        --example-text: var(--text);
+        --exampleheading-text: hsl(50deg, 70%, 70%);
+
+        --note-border: hsl(120deg, 100%, 35%);
+        --note-bg: var(--borderedblock-bg);
+        --note-text: var(--text);
+        --noteheading-text: hsl(120, 70%, 70%);
+        --notesummary-underline: silver;
+
+        --assertion-border: #444;
+        --assertion-bg: var(--borderedblock-bg);
+        --assertion-text: var(--text);
+
+        --advisement-border: orange;
+        --advisement-bg: #222218;
+        --advisement-text: var(--text);
+        --advisementheading-text: #f84;
+
+        --warning-border: red;
+        --warning-bg: hsla(40,100%,20%,0.95);
+        --warning-text: var(--text);
+
+        --amendment-border: #330099;
+        --amendment-bg: #080010;
+        --amendment-text: var(--text);
+        --amendmentheading-text: #cc00ff;
+
+        --def-border: #8ccbf2;
+        --def-bg: #080818;
+        --def-text: var(--text);
+        --defrow-border: #136;
+
+        --datacell-border: silver;
+
+        --indexinfo-text: #aaa;
+
+        --indextable-hover-text: var(--text);
+        --indextable-hover-bg: #181818;
+
+        --outdatedspec-bg: rgba(255, 255, 255, .5);
+        --outdatedspec-text: black;
+        --outdated-bg: maroon;
+        --outdated-text: white;
+        --outdated-shadow: red;
+
+        --editedrec-bg: darkorange;
+    }
+    /* In case a transparent-bg image doesn't expect to be on a dark bg,
+       which is quite common in practice... */
+    img { background: white; }
+}
+</style>
+<style>/* Boilerplate: style-counters */
+body {
+    counter-reset: example figure issue;
+}
+.issue {
+    counter-increment: issue;
+}
+.issue:not(.no-marker)::before {
+    content: "Issue " counter(issue);
+}
+
+.example {
+    counter-increment: example;
+}
+.example:not(.no-marker)::before {
+    content: "Example " counter(example);
+}
+.invalid.example:not(.no-marker)::before,
+.illegal.example:not(.no-marker)::before {
+    content: "Invalid Example " counter(example);
+}
+
+figcaption {
+    counter-increment: figure;
+}
+figcaption:not(.no-marker)::before {
+    content: "Figure " counter(figure) " ";
+}
+</style>
+<style>/* Boilerplate: style-dfn-panel */
+:root {
+    --dfnpanel-bg: #ddd;
+    --dfnpanel-text: var(--text);
+    --dfnpanel-target-bg: #ffc;
+    --dfnpanel-target-outline: orange;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --dfnpanel-bg: #222;
+        --dfnpanel-text: var(--text);
+        --dfnpanel-target-bg: #333;
+        --dfnpanel-target-outline: silver;
+    }
+}
+.dfn-panel {
+    position: absolute;
+    z-index: 35;
+    width: 20em;
+    width: 300px;
+    height: auto;
+    max-height: 500px;
+    overflow: auto;
+    padding: 0.5em 0.75em;
+    font: small Helvetica Neue, sans-serif, Droid Sans Fallback;
+    background: var(--dfnpanel-bg);
+    color: var(--dfnpanel-text);
+    border: outset 0.2em;
+    white-space: normal; /* in case it's moved into a pre */
+}
+.dfn-panel:not(.on) { display: none; }
+.dfn-panel * { margin: 0; padding: 0; text-indent: 0; }
+.dfn-panel > b { display: block; }
+.dfn-panel a { color: var(--dfnpanel-text); }
+.dfn-panel a:not(:hover) { text-decoration: none !important; border-bottom: none !important; }
+.dfn-panel a:focus {
+    outline: 5px auto Highlight;
+    outline: 5px auto -webkit-focus-ring-color;
+}
+.dfn-panel > b + b { margin-top: 0.25em; }
+.dfn-panel ul { padding: 0 0 0 1em; list-style: none; }
+.dfn-panel li a {
+    max-width: calc(300px - 1.5em - 1em);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dfn-panel.activated {
+    display: inline-block;
+    position: fixed;
+    left: 8px;
+    bottom: 2em;
+    margin: 0 auto;
+    max-width: calc(100vw - 1.5em - .4em - .5em);
+    max-height: 30vh;
+    transition: left 1s ease-out, bottom 1s ease-out;
+}
+
+.dfn-panel .link-item:hover {
+    text-decoration: underline;
+}
+.dfn-panel .link-item .copy-icon {
+    opacity: 0;
+}
+.dfn-panel .link-item:hover .copy-icon,
+.dfn-panel .link-item .copy-icon:focus {
+    opacity: 1;
+}
+
+.dfn-panel .copy-icon {
+    display: inline-block;
+    margin-right: 0.5em;
+    width: 0.85em;
+    height: 1em;
+    border-radius: 3px;
+    background-color: #ccc;
+    cursor: pointer;
+}
+
+.dfn-panel .copy-icon .icon {
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.dfn-panel .copy-icon .icon::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 1px solid black;
+    background-color: #ccc;
+    opacity: 0.25;
+    transform: translate(3px, -3px);
+}
+
+.dfn-panel .copy-icon:active .icon::before {
+    opacity: 1;
+}
+
+.dfn-paneled[role="button"] { cursor: help; }
+
+.highlighted {
+    animation: target-fade 3s;
+}
+
+@keyframes target-fade {
+    from {
+        background-color: var(--dfnpanel-target-bg);
+        outline: 5px solid var(--dfnpanel-target-outline);
+    }
+    to {
+        color: var(--a-normal-text);
+        background-color: transparent;
+        outline: transparent;
+    }
+}
+</style>
+<style>/* Boilerplate: style-idl-highlighting */
+pre.idl.highlight {
+    background: var(--borderedblock-bg, var(--def-bg));
+}
+</style>
+<style>/* Boilerplate: style-issues */
+a[href].issue-return {
+    float: right;
+    float: inline-end;
+    color: var(--issueheading-text);
+    font-weight: bold;
+    text-decoration: none;
+}
+</style>
+<style>/* Boilerplate: style-md-lists */
+/* This is a weird hack for me not yet following the commonmark spec
+   regarding paragraph and lists. */
+[data-md] > :first-child {
+    margin-top: 0;
+}
+[data-md] > :last-child {
+    margin-bottom: 0;
+}
+</style>
+<style>/* Boilerplate: style-mdn-anno */
+:root {
+	--mdn-bg: #EEE;
+	--mdn-shadow: #999;
+	--mdn-nosupport-text: #ccc;
+	--mdn-pass: green;
+	--mdn-fail: red;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--mdn-bg: #222;
+		--mdn-shadow: #444;
+		--mdn-nosupport-text: #666;
+		--mdn-pass: #690;
+		--mdn-fail: #d22;
+	}
+}
+.mdn-anno {
+	background: var(--mdn-bg, #EEE);
+	border-radius: .25em;
+	box-shadow: 0 0 3px var(--mdn-shadow, #999);
+	color: var(--text, black);
+	font: 1em sans-serif;
+	hyphens: none;
+	max-width: min-content;
+	overflow: hidden;
+	padding: 0.2em;
+	position: absolute;
+	right: 0.3em;
+	top: auto;
+	white-space: nowrap;
+	word-wrap: normal;
+	z-index: 8;
+}
+.mdn-anno.unpositioned {
+	display: none;
+}
+.mdn-anno.overlapping-main {
+	opacity: .2;
+	transition: opacity .1s;
+}
+.mdn-anno[open] {
+	opacity: 1;
+	z-index: 9;
+	min-width: 9em;
+}
+.mdn-anno:hover {
+	opacity: 1;
+	outline: var(--text, black) 1px solid;
+}
+.mdn-anno > summary {
+	font-weight: normal;
+	text-align: right;
+	cursor: pointer;
+	display: block;
+}
+.mdn-anno > summary > .less-than-two-engines-flag {
+	color: var(--mdn-fail);
+	padding-right: 2px;
+}
+.mdn-anno > summary > .all-engines-flag {
+	color: var(--mdn-pass);
+	padding-right: 2px;
+}
+.mdn-anno > summary > span {
+	color: #fff;
+	background-color: #000;
+	font-weight: normal;
+	font-family: zillaslab, Palatino, "Palatino Linotype", serif;
+	padding: 2px 3px 0px 3px;
+	line-height: 1.3em;
+	vertical-align: top;
+}
+.mdn-anno > .feature {
+	margin-top: 20px;
+}
+.mdn-anno > .feature:not(:first-of-type) {
+	border-top: 1px solid #999;
+	margin-top: 6px;
+	padding-top: 2px;
+}
+.mdn-anno > .feature > .less-than-two-engines-text {
+	color: var(--mdn-fail);
+}
+.mdn-anno > .feature > .all-engines-text {
+	color: var(--mdn-pass);
+}
+.mdn-anno > .feature > p {
+	font-size: .75em;
+	margin-top: 6px;
+	margin-bottom: 0;
+}
+.mdn-anno > .feature > p + p {
+	margin-top: 3px;
+}
+.mdn-anno > .feature > .support {
+	display: block;
+	font-size: 0.6em;
+	margin: 0;
+	padding: 0;
+	margin-top: 2px;
+}
+.mdn-anno > .feature > .support + div {
+	padding-top: 0.5em;
+}
+.mdn-anno > .feature > .support > hr {
+	display: block;
+	border: none;
+	border-top: 1px dotted #999;
+	padding: 3px 0px 0px 0px;
+	margin: 2px 3px 0px 3px;
+}
+.mdn-anno > .feature > .support > hr::before {
+	content: "";
+}
+.mdn-anno > .feature > .support > span {
+	padding: 0.2em 0;
+	display: block;
+	display: table;
+}
+.mdn-anno > .feature > .support > span.no {
+	color: var(--mdn-nosupport-text);
+	filter: grayscale(100%);
+}
+.mdn-anno > .feature > .support > span.no::before {
+	opacity: 0.5;
+}
+.mdn-anno > .feature > .support > span:first-of-type {
+	padding-top: 0.5em;
+}
+.mdn-anno > .feature > .support > span > span {
+	padding: 0 0.5em;
+	display: table-cell;
+}
+.mdn-anno > .feature > .support > span > span:first-child {
+	width: 100%;
+}
+.mdn-anno > .feature > .support > span > span:last-child {
+	width: 100%;
+	white-space: pre;
+	padding: 0;
+}
+.mdn-anno > .feature > .support > span::before {
+	content: ' ';
+	display: table-cell;
+	min-width: 1.5em;
+	height: 1.5em;
+	background: no-repeat center center;
+	background-size: contain;
+	text-align: right;
+	font-size: 0.75em;
+	font-weight: bold;
+}
+.mdn-anno > .feature > .support > .chrome_android::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/chrome.svg);
+}
+.mdn-anno > .feature > .support > .firefox_android::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/firefox.png);
+}
+.mdn-anno > .feature > .support > .chrome::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/chrome.svg);
+}
+.mdn-anno > .feature > .support > .edge_blink::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/edge.svg);
+}
+.mdn-anno > .feature > .support > .edge::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/edge_legacy.svg);
+}
+.mdn-anno > .feature > .support > .firefox::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/firefox.png);
+}
+.mdn-anno > .feature > .support > .ie::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/ie.png);
+}
+.mdn-anno > .feature > .support > .safari_ios::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/safari-ios.svg);
+}
+.mdn-anno > .feature > .support > .nodejs::before {
+	background-image: url(https://nodejs.org/favicon.ico);
+}
+.mdn-anno > .feature > .support > .opera_android::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/opera.svg);
+}
+.mdn-anno > .feature > .support > .opera::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/opera.svg);
+}
+.mdn-anno > .feature > .support > .safari::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/safari.png);
+}
+.mdn-anno > .feature > .support > .samsunginternet_android::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/samsung.svg);
+}
+.mdn-anno > .feature > .support > .webview_android::before {
+	background-image: url(https://resources.whatwg.org/browser-logos/android-webview.png);
+}
+.name-slug-mismatch {
+	color: red;
+}
+.caniuse-status:hover {
+	z-index: 9;
+}
+/* dt, li, .issue, .note, and .example are "position: relative", so to put annotation at right margin, must move to right of containing block */;
+.h-entry:not(.status-LS) dt > .mdn-anno, .h-entry:not(.status-LS) li > .mdn-anno, .h-entry:not(.status-LS) .issue > .mdn-anno, .h-entry:not(.status-LS) .note > .mdn-anno, .h-entry:not(.status-LS) .example > .mdn-anno {
+	right: -6.7em;
+}
+.h-entry p + .mdn-anno {
+	margin-top: 0;
+}
+ h2 + .mdn-anno.after {
+	margin: -48px 0 0 0;
+}
+ h3 + .mdn-anno.after {
+	margin: -46px 0 0 0;
+}
+ h4 + .mdn-anno.after {
+	margin: -42px 0 0 0;
+}
+ h5 + .mdn-anno.after {
+	margin: -40px 0 0 0;
+}
+ h6 + .mdn-anno.after {
+	margin: -40px 0 0 0;
+}
+</style>
+<style>/* Boilerplate: style-ref-hints */
+:root {
+    --ref-hint-bg: #ddd;
+    --ref-hint-text: var(--text);
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ref-hint-bg: #222;
+        --ref-hint-text: var(--text);
+    }
+}
+
+.ref-hint {
+    display: inline-block;
+    position: absolute;
+    z-index: 35;
+    width: 20em;
+    width: 300px;
+    height: auto;
+    max-height: 500px;
+    overflow: auto;
+    padding: 0.5em 0.5em;
+    font: small Helvetica Neue, sans-serif, Droid Sans Fallback;
+    background: var(--ref-hint-bg);
+    color: var(--ref-hint-text);
+    border: outset 0.2em;
+    white-space: normal; /* in case it's moved into a pre */
+}
+
+.ref-hint * { margin: 0; padding: 0; text-indent: 0; }
+
+.ref-hint ul { padding: 0 0 0 1em; list-style: none; }
+</style>
+<style>/* Boilerplate: style-selflinks */
+:root {
+    --selflink-text: white;
+    --selflink-bg: gray;
+    --selflink-hover-text: black;
+}
+.heading, .issue, .note, .example, li, dt {
+    position: relative;
+}
+a.self-link {
+    position: absolute;
+    top: 0;
+    left: calc(-1 * (3.5rem - 26px));
+    width: calc(3.5rem - 26px);
+    height: 2em;
+    text-align: center;
+    border: none;
+    transition: opacity .2s;
+    opacity: .5;
+}
+a.self-link:hover {
+    opacity: 1;
+}
+.heading > a.self-link {
+    font-size: 83%;
+}
+.example > a.self-link,
+.note > a.self-link,
+.issue > a.self-link {
+    /* These blocks are overflow:auto, so positioning outside
+       doesn't work. */
+    left: auto;
+    right: 0;
+}
+li > a.self-link {
+    left: calc(-1 * (3.5rem - 26px) - 2em);
+}
+dfn > a.self-link {
+    top: auto;
+    left: auto;
+    opacity: 0;
+    width: 1.5em;
+    height: 1.5em;
+    background: var(--selflink-bg);
+    color: var(--selflink-text);
+    font-style: normal;
+    transition: opacity .2s, background-color .2s, color .2s;
+}
+dfn:hover > a.self-link {
+    opacity: 1;
+}
+dfn > a.self-link:hover {
+    color: var(--selflink-hover-text);
+}
+
+a.self-link::before            { content: "¶"; }
+.heading > a.self-link::before { content: "§"; }
+dfn > a.self-link::before      { content: "#"; }
+</style>
+<style>/* Boilerplate: style-syntax-highlighting */
+code.highlight { padding: .1em; border-radius: .3em; }
+pre.highlight, pre > code.highlight { display: block; padding: 1em; margin: .5em 0; overflow: auto; border-radius: 0; }
+
+.highlight:not(.idl) { background: rgba(0, 0, 0, .03); }
+c-[a] { color: #990055 } /* Keyword.Declaration */
+c-[b] { color: #990055 } /* Keyword.Type */
+c-[c] { color: #708090 } /* Comment */
+c-[d] { color: #708090 } /* Comment.Multiline */
+c-[e] { color: #0077aa } /* Name.Attribute */
+c-[f] { color: #669900 } /* Name.Tag */
+c-[g] { color: #222222 } /* Name.Variable */
+c-[k] { color: #990055 } /* Keyword */
+c-[l] { color: #000000 } /* Literal */
+c-[m] { color: #000000 } /* Literal.Number */
+c-[n] { color: #0077aa } /* Name */
+c-[o] { color: #999999 } /* Operator */
+c-[p] { color: #999999 } /* Punctuation */
+c-[s] { color: #a67f59 } /* Literal.String */
+c-[t] { color: #a67f59 } /* Literal.String.Single */
+c-[u] { color: #a67f59 } /* Literal.String.Double */
+c-[cp] { color: #708090 } /* Comment.Preproc */
+c-[c1] { color: #708090 } /* Comment.Single */
+c-[cs] { color: #708090 } /* Comment.Special */
+c-[kc] { color: #990055 } /* Keyword.Constant */
+c-[kn] { color: #990055 } /* Keyword.Namespace */
+c-[kp] { color: #990055 } /* Keyword.Pseudo */
+c-[kr] { color: #990055 } /* Keyword.Reserved */
+c-[ld] { color: #000000 } /* Literal.Date */
+c-[nc] { color: #0077aa } /* Name.Class */
+c-[no] { color: #0077aa } /* Name.Constant */
+c-[nd] { color: #0077aa } /* Name.Decorator */
+c-[ni] { color: #0077aa } /* Name.Entity */
+c-[ne] { color: #0077aa } /* Name.Exception */
+c-[nf] { color: #0077aa } /* Name.Function */
+c-[nl] { color: #0077aa } /* Name.Label */
+c-[nn] { color: #0077aa } /* Name.Namespace */
+c-[py] { color: #0077aa } /* Name.Property */
+c-[ow] { color: #999999 } /* Operator.Word */
+c-[mb] { color: #000000 } /* Literal.Number.Bin */
+c-[mf] { color: #000000 } /* Literal.Number.Float */
+c-[mh] { color: #000000 } /* Literal.Number.Hex */
+c-[mi] { color: #000000 } /* Literal.Number.Integer */
+c-[mo] { color: #000000 } /* Literal.Number.Oct */
+c-[sb] { color: #a67f59 } /* Literal.String.Backtick */
+c-[sc] { color: #a67f59 } /* Literal.String.Char */
+c-[sd] { color: #a67f59 } /* Literal.String.Doc */
+c-[se] { color: #a67f59 } /* Literal.String.Escape */
+c-[sh] { color: #a67f59 } /* Literal.String.Heredoc */
+c-[si] { color: #a67f59 } /* Literal.String.Interpol */
+c-[sx] { color: #a67f59 } /* Literal.String.Other */
+c-[sr] { color: #a67f59 } /* Literal.String.Regex */
+c-[ss] { color: #a67f59 } /* Literal.String.Symbol */
+c-[vc] { color: #0077aa } /* Name.Variable.Class */
+c-[vg] { color: #0077aa } /* Name.Variable.Global */
+c-[vi] { color: #0077aa } /* Name.Variable.Instance */
+c-[il] { color: #000000 } /* Literal.Number.Integer.Long */
+
+@media (prefers-color-scheme: dark) {
+    .highlight:not(.idl) { background: rgba(255, 255, 255, .05); }
+
+    c-[a] { color: #d33682 } /* Keyword.Declaration */
+    c-[b] { color: #d33682 } /* Keyword.Type */
+    c-[c] { color: #2aa198 } /* Comment */
+    c-[d] { color: #2aa198 } /* Comment.Multiline */
+    c-[e] { color: #268bd2 } /* Name.Attribute */
+    c-[f] { color: #b58900 } /* Name.Tag */
+    c-[g] { color: #cb4b16 } /* Name.Variable */
+    c-[k] { color: #d33682 } /* Keyword */
+    c-[l] { color: #657b83 } /* Literal */
+    c-[m] { color: #657b83 } /* Literal.Number */
+    c-[n] { color: #268bd2 } /* Name */
+    c-[o] { color: #657b83 } /* Operator */
+    c-[p] { color: #657b83 } /* Punctuation */
+    c-[s] { color: #6c71c4 } /* Literal.String */
+    c-[t] { color: #6c71c4 } /* Literal.String.Single */
+    c-[u] { color: #6c71c4 } /* Literal.String.Double */
+    c-[ch] { color: #2aa198 } /* Comment.Hashbang */
+    c-[cp] { color: #2aa198 } /* Comment.Preproc */
+    c-[cpf] { color: #2aa198 } /* Comment.PreprocFile */
+    c-[c1] { color: #2aa198 } /* Comment.Single */
+    c-[cs] { color: #2aa198 } /* Comment.Special */
+    c-[kc] { color: #d33682 } /* Keyword.Constant */
+    c-[kn] { color: #d33682 } /* Keyword.Namespace */
+    c-[kp] { color: #d33682 } /* Keyword.Pseudo */
+    c-[kr] { color: #d33682 } /* Keyword.Reserved */
+    c-[ld] { color: #657b83 } /* Literal.Date */
+    c-[nc] { color: #268bd2 } /* Name.Class */
+    c-[no] { color: #268bd2 } /* Name.Constant */
+    c-[nd] { color: #268bd2 } /* Name.Decorator */
+    c-[ni] { color: #268bd2 } /* Name.Entity */
+    c-[ne] { color: #268bd2 } /* Name.Exception */
+    c-[nf] { color: #268bd2 } /* Name.Function */
+    c-[nl] { color: #268bd2 } /* Name.Label */
+    c-[nn] { color: #268bd2 } /* Name.Namespace */
+    c-[py] { color: #268bd2 } /* Name.Property */
+    c-[ow] { color: #657b83 } /* Operator.Word */
+    c-[mb] { color: #657b83 } /* Literal.Number.Bin */
+    c-[mf] { color: #657b83 } /* Literal.Number.Float */
+    c-[mh] { color: #657b83 } /* Literal.Number.Hex */
+    c-[mi] { color: #657b83 } /* Literal.Number.Integer */
+    c-[mo] { color: #657b83 } /* Literal.Number.Oct */
+    c-[sa] { color: #6c71c4 } /* Literal.String.Affix */
+    c-[sb] { color: #6c71c4 } /* Literal.String.Backtick */
+    c-[sc] { color: #6c71c4 } /* Literal.String.Char */
+    c-[dl] { color: #6c71c4 } /* Literal.String.Delimiter */
+    c-[sd] { color: #6c71c4 } /* Literal.String.Doc */
+    c-[se] { color: #6c71c4 } /* Literal.String.Escape */
+    c-[sh] { color: #6c71c4 } /* Literal.String.Heredoc */
+    c-[si] { color: #6c71c4 } /* Literal.String.Interpol */
+    c-[sx] { color: #6c71c4 } /* Literal.String.Other */
+    c-[sr] { color: #6c71c4 } /* Literal.String.Regex */
+    c-[ss] { color: #6c71c4 } /* Literal.String.Symbol */
+    c-[fm] { color: #268bd2 } /* Name.Function.Magic */
+    c-[vc] { color: #cb4b16 } /* Name.Variable.Class */
+    c-[vg] { color: #cb4b16 } /* Name.Variable.Global */
+    c-[vi] { color: #cb4b16 } /* Name.Variable.Instance */
+    c-[vm] { color: #cb4b16 } /* Name.Variable.Magic */
+    c-[il] { color: #657b83 } /* Literal.Number.Integer.Long */
+}
+</style>
+ <body class="h-entry">
+  <div class="head">
+   <p data-fill-with="logo"><a class="logo" href="https://www.w3.org/">
+    <img alt="W3C" height="48" src="https://www.w3.org/StyleSheets/TR/2021/logos/W3C" width="72">
+</a>
+</p>
+   <h1 class="no-ref p-name" id="title">Server Timing</h1>
+   <p id="w3c-state"><a href="https://www.w3.org/standards/types/#ED">Editor’s Draft</a>,
+    <time class="dt-updated" datetime="2026-03-09">9 March 2026</time></p>
+   <details open>
+    <summary>More details about this document</summary>
+    <div data-fill-with="spec-metadata">
+     <dl>
+      <dt>This version:
+      <dd><a class="u-url" href="https://w3c.github.io/server-timing/">https://w3c.github.io/server-timing/</a>
+      <dt>Latest published version:
+      <dd><a href="https://www.w3.org/TR/server-timing/">https://www.w3.org/TR/server-timing/</a>
+      <dt>Feedback:
+      <dd><span><a href="mailto:public-web-perf@w3.org?subject=%5Bserver-timing%5D%20YOUR%20TOPIC%20HERE">public-web-perf@w3.org</a> with subject line “<kbd>[server-timing] <i data-lt>… message topic …</i></kbd>” (<a href="https://lists.w3.org/Archives/Public/public-web-perf/" rel="discussion">archives</a>)</span>
+      <dd><a href="https://github.com/w3c/server-timing/issues/">GitHub</a>
+      <dt>Test Suite:
+      <dd><a href="http://w3c-test.org/server-timing/">http://w3c-test.org/server-timing/</a>
+      <dt class="editor">Editor:
+      <dd class="editor h-card p-author vcard" data-editor-id="58673"><a class="fn p-name u-url url" href="https://blog.yoav.ws/">Yoav Weiss</a> (<a class="org p-org" href="https://shopify.com/">Shopify</a>)
+      <dt class="editor">Former Editors:
+      <dd class="editor h-card p-author vcard" data-editor-id="77116"><a class="email fn p-name u-email" href="mailto:cvazac@gmail.com">Charles Vazac</a> (<a class="org p-org" href="https://www.akamai.com/">Akamai</a>)
+      <dd class="editor h-card p-author vcard" data-editor-id="56102"><a class="fn p-name u-url url" href="https://www.igvita.com/">Ilya Grigorik</a> (<a class="org p-org" href="https://www.google.com/">Google</a>)
+     </dl>
+    </div>
+   </details>
+   <div data-fill-with="warning"></div>
+   <p class="copyright" data-fill-with="copyright"><a href="https://www.w3.org/policies/#copyright">Copyright</a> © 2026 <a href="https://www.w3.org/">World Wide Web Consortium</a>. <abbr title="World Wide Web Consortium">W3C</abbr><sup>®</sup> <a href="https://www.w3.org/policies/#Legal_Disclaimer">liability</a>, <a href="https://www.w3.org/policies/#W3C_Trademarks">trademark</a> and <a href="https://www.w3.org/copyright/software-license/" rel="license" title="W3C Software and Document License">permissive document license</a> rules apply.
+</p>
+   <hr title="Separator for header">
+  </div>
+  <div class="p-summary" data-fill-with="abstract">
+   <h2 class="heading no-num no-ref no-toc settled" id="abstract"><span class="content">Abstract</span></h2>
+   <p>This specification enables a server to communicate performance metrics about the request-response cycle to the user agent. It also standardizes a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.</p>
+  </div>
+  <h2 class="heading no-num no-ref no-toc settled" id="sotd"><span class="content">Status of this document</span></h2>
+  <div data-fill-with="status">
+   <p>
+	This is a public copy of the editors’ draft.
+	It is provided for discussion only and may change at any moment.
+	Its publication here does not imply endorsement of its contents by W3C.
+	Don’t cite this document other than as work in progress.
+
+</p>
+   <p><a href="https://github.com/w3c/server-timing/issues">GitHub Issues</a> are preferred for discussion of this specification.
+
+</p>
+   <p>This document is governed by the
+	<a href="https://www.w3.org/policies/process/20250818/" id="w3c_process_revision">18 August 2025 W3C Process Document</a>.
+
+</p>
+  </div>
+  <div data-fill-with="at-risk"></div>
+  <nav data-fill-with="table-of-contents" id="toc">
+   <h2 class="no-num no-ref no-toc" id="contents">Table of Contents</h2>
+   <ol class="toc">
+    <li><a href="#introduction"><span class="secno">1</span> <span class="content">Introduction</span></a>
+    <li><a href="#the-server-timing-header-field"><span class="secno">2</span> <span class="content">The <code>Server-Timing</code> Header Field</span></a>
+    <li>
+     <a href="#the-performanceservertiming-interface"><span class="secno">3</span> <span class="content">The <code class="idl"><span>PerformanceServerTiming</span></code> Interface</span></a>
+     <ol class="toc">
+      <li><a href="#the-name-attribute"><span class="secno">3.1</span> <span class="content"><span>name</span> attribute</span></a>
+      <li><a href="#the-duration-attribute"><span class="secno">3.2</span> <span class="content"><span>duration</span> attribute</span></a>
+      <li><a href="#the-description-attribute"><span class="secno">3.3</span> <span class="content"><span>description</span> attribute</span></a>
+      <li><a href="#extension-to-performanceresourcetiming"><span class="secno">3.4</span> <span class="content">Extension to the <code class="idl"><span>PerformanceResourceTiming</span></code> interface</span></a>
+      <li><a href="#the-servertiming-attribute"><span class="secno">3.5</span> <span class="content"><code>serverTiming</code> attribute</span></a>
+     </ol>
+    <li><a href="#privacy-and-security"><span class="secno">4</span> <span class="content">Privacy and Security</span></a>
+    <li>
+     <a href="#iana-considerations"><span class="secno">5</span> <span class="content">IANA Considerations</span></a>
+     <ol class="toc">
+      <li><a href="#server-timing-header-field-registration"><span class="secno">5.1</span> <span class="content">Server-Timing Header Field</span></a>
+     </ol>
+    <li><a href="#examples"><span class="secno">6</span> <span class="content">Examples</span></a>
+    <li>
+     <a href="#use-cases"><span class="secno">7</span> <span class="content">Use cases</span></a>
+     <ol class="toc">
+      <li><a href="#server-timing-in-developer-tools"><span class="secno">7.1</span> <span class="content">Server timing in developer tools</span></a>
+      <li><a href="#server-timing-for-automated-analytics"><span class="secno">7.2</span> <span class="content">Server timing for automated analytics</span></a>
+      <li><a href="#measuring-request-routing-performance"><span class="secno">7.3</span> <span class="content">Measuring request routing performance</span></a>
+     </ol>
+    <li><a href="#acknowledgments"><span class="secno">8</span> <span class="content">Acknowledgments</span></a>
+    <li>
+     <a href="#w3c-conformance"><span class="secno"></span> <span class="content">Conformance</span></a>
+     <ol class="toc">
+      <li><a href="#w3c-conventions"><span class="secno"></span> <span class="content">Document conventions</span></a>
+      <li><a href="#w3c-conformant-algorithms"><span class="secno"></span> <span class="content">Conformant Algorithms</span></a>
+     </ol>
+    <li>
+     <a href="#index"><span class="secno"></span> <span class="content">Index</span></a>
+     <ol class="toc">
+      <li><a href="#index-defined-here"><span class="secno"></span> <span class="content">Terms defined by this specification</span></a>
+      <li><a href="#index-defined-elsewhere"><span class="secno"></span> <span class="content">Terms defined by reference</span></a>
+     </ol>
+    <li>
+     <a href="#references"><span class="secno"></span> <span class="content">References</span></a>
+     <ol class="toc">
+      <li><a href="#normative"><span class="secno"></span> <span class="content">Normative References</span></a>
+      <li><a href="#informative"><span class="secno"></span> <span class="content">Informative References</span></a>
+     </ol>
+    <li><a href="#idl-index"><span class="secno"></span> <span class="content">IDL Index</span></a>
+   </ol>
+  </nav>
+  <main>
+   <section class="informative">
+    <h2 class="heading settled" data-level="1" id="introduction"><span class="secno">1. </span><span class="content">Introduction</span><a class="self-link" href="#introduction"></a></h2>
+    
+  <em>This section is non-normative.</em>
+  
+    <p>
+    Accurately measuring performance characteristics of web applications is an important aspect of making web applications faster. <a data-link-type="biblio" href="#biblio-navigation-timing" title="Navigation Timing">[NAVIGATION-TIMING]</a> and <a data-link-type="biblio" href="#biblio-resource-timing" title="Resource Timing">[RESOURCE-TIMING]</a> provide detailed request timing information for the document and its resources, which include time when the request was initiated, and various milestones to negotiate the connection and receive the response. However, while the user agent can observe the timing data of the request it has no insight into how or why certain stages of the request-response cycle have taken as much time as they have - e.g., how the request was routed, where the time was spent on the server, and so on.
+  </p>
+    <p>
+    This specification introduces <code class="idl"><a data-link-type="idl" href="#performanceservertiming" id="ref-for-performanceservertiming">PerformanceServerTiming</a></code> interface, which enables the server to communicate performance metrics about the request-response cycle to the user agent, and a JavaScript interface to enable applications to collect, process, and act on these metrics to optimize application delivery.
+  </p>
+   </section>
+   <h2 class="heading settled" data-level="2" id="the-server-timing-header-field"><span class="secno">2. </span><span class="content">The <code>Server-Timing</code> Header Field</span><a class="self-link" href="#the-server-timing-header-field"></a></h2>
+   <p>The <dfn class="dfn-paneled" data-dfn-type="dfn" data-export id="server-timing-header-field">Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) <a data-link-type="biblio" href="#biblio-rfc5234" title="Augmented BNF for Syntax Specifications: ABNF">[RFC5234]</a> syntax for the <a data-link-type="dfn" href="#server-timing-header-field" id="ref-for-server-timing-header-field">Server-Timing header field</a> is as follows:</p>
+<pre>Server-Timing             = #server-timing-metric
+server-timing-metric      = metric-name *( OWS ";" OWS server-timing-param )
+metric-name               = token
+server-timing-param       = server-timing-param-name OWS "=" OWS server-timing-param-value
+server-timing-param-name  = token
+server-timing-param-value = token / quoted-string
+</pre>
+   <p>See <a data-biblio-obsolete data-link-type="biblio" href="#biblio-rfc7230" title="Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing">[RFC7230]</a> for definitions of <code>#</code>, <code>*</code>, <code>OWS</code>, <code>token</code>, and <code>quoted-string</code>.</p>
+   <p>A response MAY have multiple server-timing-metric entries with the same metric-name, and the user agent MUST process and expose all such entries.</p>
+   <p>The user agent MAY surface provided metrics in any order - i.e. the order of metrics in the HTTP header field is not significant.</p>
+   <p>This header field is defined with an extensible syntax to allow for future parameters. A user agent that does not recognize particular server-timing-param-name in the Server-Timing header field of a response MUST ignore those tokens and continue processing instead of signaling an error.</p>
+   <p>To avoid any possible ambiguity, individual <code>server-timing-param-name</code>s SHOULD NOT appear multiple times within a <code>server-timing-metric</code>. If any <code>server-timing-param-name</code> is specified more than once, only the first instance is to be considered, even if the <code>server-timing-param</code> is incomplete or invalid. All subsequent occurrences MUST be ignored without signaling an error or otherwise altering the processing of the <code>server-timing-metric</code>. This is the only case in which the ordering of parameters within a <code>server-timing-metric</code> is considered to be significant.</p>
+   <p>User agents MUST ignore extraneous characters found after a <code>server-timing-param-value</code> but before the next <code>server-timing-param</code> and before the end of the current <code>server-timing-metric</code>.</p>
+   <p>User agents MUST ignore extraneous characters found after a <code>metric-name</code> but before the first <code>server-timing-param</code> and before the next <code>server-timing-metric</code>.</p>
+   <p>
+  This specification establishes the server-timing-params for server-timing-param-names "dur" for <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration">duration</a></code> and "desc" for <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-description" id="ref-for-dom-performanceservertiming-description">description</a></code>, both optional.
+</p>
+   <div class="note" role="note">
+    <ul>
+     <li><span class="allow-2119">To minimize the HTTP overhead the provided names and descriptions should be kept as short as possible - e.g. use abbreviations and omit optional values where possible.</span>
+     <li>Because there can be no guarantee of clock synchronization between client, server, and intermediaries, it is impossible to map a meaningful <code>startTime</code> onto the clients timeline. For that reason, any <code>startTime</code> attribution is purposely omitted from this specification. If the developers want to establish a relationship between multiple entries, they can do so by communicating custom data via metric names and/or descriptions.
+     <li><span class="allow-2119">The server and/or any relevant intermediaries are in full control of which metrics are communicated to the user agent and when. For example, access to some metrics may be restricted due to privacy or security reasons - see <a href="#privacy-and-security">§ 4 Privacy and Security</a> section.</span>
+    </ul>
+   </div>
+   <p>To <dfn class="dfn-paneled" data-dfn-type="dfn" data-export id="parse-a-server-timing-header-field">parse a server-timing header field</dfn> given a string <var>field</var>:</p>
+   <ol>
+    <li>
+     <p>Let <var>position</var> be a <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#string-position-variable" id="ref-for-string-position-variable">position variable</a>, initially pointing at the start of <var>field</var>.</p>
+    <li>
+     <p>Let <var>name</var> be the result of <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points" id="ref-for-collect-a-sequence-of-code-points">collecting a sequence of code points</a> from <var>field</var> that are not equal to U+003B (;), given <var>position</var>.</p>
+    <li>
+     <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace" id="ref-for-strip-leading-and-trailing-ascii-whitespace">Strip leading and trailing ASCII whitespace</a> from <var>name</var>.</p>
+    <li>
+     <p>If <var>name</var> is an empty string, return null.</p>
+    <li>
+     <p>Let <var>metric</var> be a new <code class="idl"><a data-link-type="idl" href="#performanceservertiming" id="ref-for-performanceservertiming①">PerformanceServerTiming</a></code> whose <a data-link-type="dfn" href="#performanceservertiming-metric-name" id="ref-for-performanceservertiming-metric-name">metric name</a> is <var>name</var>.</p>
+    <li>
+     <p>Let <var>params</var> be an empty <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#ordered-map" id="ref-for-ordered-map">ordered map</a>.</p>
+    <li>
+     <p>While <var>position</var> is not at the end of <var>field</var>:</p>
+     <ol>
+      <li>
+       <p>Advance <var>position</var> by 1.</p>
+      <li>
+       <p>Let <var>paramName</var> be the result of <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points" id="ref-for-collect-a-sequence-of-code-points①">collecting a sequence of code points</a> from <var>field</var> that are not equal to U+003D (=), given <var>position</var>.</p>
+      <li>
+       <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace" id="ref-for-strip-leading-and-trailing-ascii-whitespace①">Strip leading and trailing ASCII whitespace</a> from <var>paramName</var>.</p>
+      <li>
+       <p>If <var>paramName</var> is an empty string or <var>params</var>[<var>paramName</var>] <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists">exists</a>, <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#iteration-continue" id="ref-for-iteration-continue">continue</a>.</p>
+      <li>
+       <p>Advance <var>position</var> by 1.</p>
+      <li>
+       <p>Let <var>paramValue</var> be an empty string.</p>
+      <li>
+       <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#skip-ascii-whitespace" id="ref-for-skip-ascii-whitespace">Skip ASCII whitespace</a> within <var>field</var> given <var>position</var>.</p>
+      <li>
+       <p>If the <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#code-point" id="ref-for-code-point">code point</a> at <var>position</var> within <var>field</var> is U+0022 ("), then:</p>
+       <ol>
+        <li>
+         <p>Set <var>paramValue</var> to the result of <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#collect-an-http-quoted-string" id="ref-for-collect-an-http-quoted-string">collecting an HTTP quoted string</a> from <var>field</var> given <var>position</var> with the <i>extract-value flag</i> set.</p>
+        <li>
+         <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points" id="ref-for-collect-a-sequence-of-code-points②">Collect a sequence of code points</a> from <var>field</var> that are not equal to U+003B (;), given <var>position</var>. The result is not used.</p>
+       </ol>
+      <li>
+       <p>Otherwise:</p>
+       <ol>
+        <li>
+         <p>Let <var>rawParamValue</var> be the result of <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points" id="ref-for-collect-a-sequence-of-code-points③">collecting a sequence of code points</a> from <var>field</var> that are not equal to U+003B (;), given <var>position</var>.</p>
+        <li>
+         <p>Let <var>paramValue</var> be the result of <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace" id="ref-for-strip-leading-and-trailing-ascii-whitespace②">stripping</a> <var>rawParamValue</var>.</p>
+       </ol>
+     </ol>
+    <li>
+     <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-set" id="ref-for-map-set">Set</a> <var>metric</var>’s <a data-link-type="dfn" href="#performanceservertiming-params" id="ref-for-performanceservertiming-params">params</a> to <var>params</var>.</p>
+    <li>
+     <p>Return <var>metric</var>.</p>
+   </ol>
+   <h2 class="heading settled" data-level="3" id="the-performanceservertiming-interface"><span class="secno">3. </span><span class="content">The <code class="idl"><a data-link-type="idl" href="#performanceservertiming" id="ref-for-performanceservertiming②">PerformanceServerTiming</a></code> Interface</span><a class="self-link" href="#the-performanceservertiming-interface"></a></h2>
+<pre class="def highlight idl">[<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Exposed" id="ref-for-Exposed"><c- g>Exposed</c-></a>=(<c- n>Window</c->,<c- n>Worker</c->)]
+<c- b>interface</c-> <dfn class="dfn-paneled idl-code" data-dfn-type="interface" data-export id="performanceservertiming"><code><c- g>PerformanceServerTiming</c-></code></dfn> {
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString" id="ref-for-idl-DOMString"><c- b>DOMString</c-></a> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="attribute" data-export data-readonly data-type="DOMString" id="dom-performanceservertiming-name"><code><c- g>name</c-></code></dfn>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a data-link-type="idl-name" href="https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp" id="ref-for-typedefdef-domhighrestimestamp"><c- n>DOMHighResTimeStamp</c-></a> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="attribute" data-export data-readonly data-type="DOMHighResTimeStamp" id="dom-performanceservertiming-duration"><code><c- g>duration</c-></code></dfn>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString" id="ref-for-idl-DOMString①"><c- b>DOMString</c-></a> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="attribute" data-export data-readonly data-type="DOMString" id="dom-performanceservertiming-description"><code><c- g>description</c-></code></dfn>;
+  [<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Default" id="ref-for-Default"><c- g>Default</c-></a>] <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-object" id="ref-for-idl-object"><c- b>object</c-></a> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="method" data-export data-lt="toJSON()" id="dom-performanceservertiming-tojson"><code><c- g>toJSON</c-></code></dfn>();
+};
+</pre>
+   <p>When <dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-export id="performanceservertiming-tojson">toJSON</dfn> is called, run <a data-link-type="biblio" href="#biblio-webidl" title="Web IDL Standard">[WEBIDL]</a>’s <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#default-tojson-steps" id="ref-for-default-tojson-steps">default toJSON steps</a>.</p>
+   <h3 class="heading settled" data-level="3.1" id="the-name-attribute"><span class="secno">3.1. </span><span class="content"><dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-export id="performanceservertiming-name">name</dfn> attribute</span><a class="self-link" href="#the-name-attribute"></a></h3>
+   <p>The <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-name" id="ref-for-dom-performanceservertiming-name">name</a></code> getter steps are to return <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this">this</a>’s <a data-link-type="dfn" href="#performanceservertiming-metric-name" id="ref-for-performanceservertiming-metric-name①">metric name</a>.</p>
+   <h3 class="heading settled" data-level="3.2" id="the-duration-attribute"><span class="secno">3.2. </span><span class="content"><dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-export id="performanceservertiming-duration">duration</dfn> attribute</span><a class="self-link" href="#the-duration-attribute"></a></h3>
+   <p>The <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration①">duration</a></code> getter steps are to do the following:</p>
+   <ol>
+    <li>
+     <p>If <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this①">this</a>’s <a data-link-type="dfn" href="#performanceservertiming-params" id="ref-for-performanceservertiming-params①">params</a>[<code>"dur"</code>] does not <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists①">exist</a>, return 0.</p>
+    <li>
+     <p>Let <var>dur</var> be the result of parsing <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this②">this</a>’s <a data-link-type="dfn" href="#performanceservertiming-params" id="ref-for-performanceservertiming-params②">params</a>[<code>"dur"</code>] using the <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values" id="ref-for-rules-for-parsing-floating-point-number-values">rules for parsing floating-point number values</a>.</p>
+    <li>
+     <p>If <var>dur</var> is an error, return 0; Otherwise return <var>dur</var>.</p>
+   </ol>
+   <p class="note" role="note">
+  Since <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration②">duration</a></code> is a <code class="idl"><a data-link-type="idl" href="https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp" id="ref-for-typedefdef-domhighrestimestamp①">DOMHighResTimeStamp</a></code>, it usually represents a <a data-link-type="dfn" href="https://w3c.github.io/hr-time/#dfn-duration" id="ref-for-dfn-duration">duration</a> in
+  milliseconds. Since this is not enforceable in practice, <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration③">duration</a></code> can represent any unit
+  of time, and having it represent a <a data-link-type="dfn" href="https://w3c.github.io/hr-time/#dfn-duration" id="ref-for-dfn-duration①">duration</a> in milliseconds is a recommendation.
+</p>
+   <h3 class="heading settled" data-level="3.3" id="the-description-attribute"><span class="secno">3.3. </span><span class="content"><dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-export id="performanceservertiming-description">description</dfn> attribute</span><a class="self-link" href="#the-description-attribute"></a></h3>
+   <p>The <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-description" id="ref-for-dom-performanceservertiming-description①">description</a></code> getter steps are to return <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this③">this</a>’s <a data-link-type="dfn" href="#performanceservertiming-params" id="ref-for-performanceservertiming-params③">params</a>[<code>"desc"</code>] if it <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists②">exists</a>, otherwise the empty string.</p>
+   <p>A <code class="idl"><a data-link-type="idl" href="#performanceservertiming" id="ref-for-performanceservertiming③">PerformanceServerTiming</a></code> has an associated string <dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-noexport id="performanceservertiming-metric-name">metric name</dfn>, initially set to the empty string.</p>
+   <p>A <code class="idl"><a data-link-type="idl" href="#performanceservertiming" id="ref-for-performanceservertiming④">PerformanceServerTiming</a></code> has an associated <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#ordered-map" id="ref-for-ordered-map①">ordered map</a> <dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-noexport id="performanceservertiming-params">params</dfn>, initially empty.</p>
+   <h3 class="heading settled" data-level="3.4" id="extension-to-performanceresourcetiming"><span class="secno">3.4. </span><span class="content">Extension to the <code class="idl"><a data-link-type="idl" href="https://w3c.github.io/resource-timing/#performanceresourcetiming" id="ref-for-performanceresourcetiming">PerformanceResourceTiming</a></code> interface</span><a class="self-link" href="#extension-to-performanceresourcetiming"></a></h3>
+   <p>The <code class="idl"><a data-link-type="idl" href="https://w3c.github.io/resource-timing/#performanceresourcetiming" id="ref-for-performanceresourcetiming①">PerformanceResourceTiming</a></code> interface, which this specification partially extends, is defined in <a data-link-type="biblio" href="#biblio-resource-timing" title="Resource Timing">[RESOURCE-TIMING]</a>.</p>
+<pre class="def highlight idl">[<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Exposed" id="ref-for-Exposed①"><c- g>Exposed</c-></a>=(<c- n>Window</c->,<c- n>Worker</c->)]
+<c- b>partial</c-> <c- b>interface</c-> <a class="idl-code" data-link-type="interface" href="https://w3c.github.io/resource-timing/#performanceresourcetiming" id="ref-for-performanceresourcetiming②"><c- g>PerformanceResourceTiming</c-></a> {
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-frozen-array" id="ref-for-idl-frozen-array"><c- b>FrozenArray</c-></a>&lt;<a data-link-type="idl-name" href="#performanceservertiming" id="ref-for-performanceservertiming⑤"><c- n>PerformanceServerTiming</c-></a>> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceResourceTiming" data-dfn-type="attribute" data-export data-readonly data-type="FrozenArray<PerformanceServerTiming>" id="dom-performanceresourcetiming-servertiming"><code><c- g>serverTiming</c-></code></dfn>;
+};
+</pre>
+   <h3 class="heading settled" data-level="3.5" id="the-servertiming-attribute"><span class="secno">3.5. </span><span class="content"><code>serverTiming</code> attribute</span><a class="self-link" href="#the-servertiming-attribute"></a></h3>
+   <p>The <dfn class="dfn-paneled" data-dfn-for="PerformanceResourceTiming" data-dfn-type="dfn" data-export id="performanceresourcetiming-servertiming">serverTiming</dfn> getter steps are the following:</p>
+   <ol>
+    <li>
+     <p>Let <var>entries</var> be a new <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list">list</a>.</p>
+    <li>
+     <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-iterate" id="ref-for-list-iterate">For each</a> <var>field</var> in <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this④">this</a>’s <a data-link-type="dfn" href="https://w3c.github.io/resource-timing/#dfn-timing-info" id="ref-for-dfn-timing-info">timing info</a>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#fetch-timing-info-server-timing-headers" id="ref-for-fetch-timing-info-server-timing-headers">server-timing headers</a>:</p>
+     <ol>
+      <li>
+       <p>Let <var>metric</var> be the result of <a data-link-type="dfn" href="#parse-a-server-timing-header-field" id="ref-for-parse-a-server-timing-header-field">parsing</a> <var>field</var>.</p>
+      <li>
+       <p>If <var>metric</var> is not null, <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-append" id="ref-for-list-append">append</a> <var>metric</var> to <var>entries</var>.</p>
+     </ol>
+    <li>
+     <p>Return <var>entries</var>.</p>
+   </ol>
+   <section class="informative">
+    <h2 class="heading settled" data-level="4" id="privacy-and-security"><span class="secno">4. </span><span class="content">Privacy and Security</span><a class="self-link" href="#privacy-and-security"></a></h2>
+    
+  <em>This section is non-normative.</em>
+
+  
+    <p><span class="allow-2119">The interfaces defined in this specification expose potentially sensitive application and infrastructure information to any web page that has included a resource that advertises server timing metrics. For this reason the access to <code>PerformanceServerTiming</code> interface is restricted by the <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/browsers.html#same-origin" id="ref-for-same-origin">same origin</a> policy by default. Resource providers can explicitly allow server timing information to be available by adding the <code>Timing-Allow-Origin</code> HTTP response header, as defined in <a data-link-type="biblio" href="#biblio-resource-timing" title="Resource Timing">[RESOURCE-TIMING]</a>, that specifies the domains that may be allowed to access the server metrics, but the user agent MAY keep the <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/browsers.html#same-origin" id="ref-for-same-origin①">same origin</a> policy restriction.</span></p>
+    <p><span class="allow-2119">In addition to using the <code>Timing-Allow-Origin</code> HTTP response header, the server can also use relevant logic to control which metrics are returned, when, and to whom - e.g. the server may only provide certain metrics to correctly authenticated users and nothing at all to all others.</span></p>
+   </section>
+   <h2 class="heading settled" data-level="5" id="iana-considerations"><span class="secno">5. </span><span class="content">IANA Considerations</span><a class="self-link" href="#iana-considerations"></a></h2>
+   <p>The permanent message header field registry should be updated with the following registrations (<a data-link-type="biblio" href="#biblio-rfc3864" title="Registration Procedures for Message Header Fields">[RFC3864]</a>):</p>
+   <h3 class="heading settled" data-level="5.1" id="server-timing-header-field-registration"><span class="secno">5.1. </span><span class="content">Server-Timing Header Field</span><a class="self-link" href="#server-timing-header-field-registration"></a></h3>
+   <dl>
+    <dt>Header field name
+    <dd>Server-Timing
+    <dt>Applicable protocol
+    <dd>http
+    <dt>Status
+    <dd>standard
+    <dt>Author/Change controller
+    <dd>W3C
+    <dt>Specification document
+    <dd>This specification (See <a data-link-type="dfn" href="#server-timing-header-field" id="ref-for-server-timing-header-field①">Server-Timing Header Field</a>)
+   </dl>
+   <section class="informative">
+    <h2 class="heading informative settled" data-level="6" id="examples"><span class="secno">6. </span><span class="content">Examples</span><a class="self-link" href="#examples"></a></h2>
+    
+  <em>This section is non-normative.</em>
+
+  
+<pre class="example" id="example-server-timing-headers"><a class="self-link" href="#example-server-timing-headers"></a>> GET /resource HTTP/1.1
+> Host: example.com
+
+&lt; HTTP/1.1 200 OK
+&lt; Server-Timing: miss, db;dur=53, app;dur=47.2
+&lt; Server-Timing: customView, dc;desc=atl
+&lt; Server-Timing: cache;desc="Cache Read";dur=23.2
+&lt; Trailer: Server-Timing
+&lt; (... snip response body ...)
+&lt; Server-Timing: total;dur=123.4
+</pre>
+    <table class="parameters">
+     <thead>
+      <tr>
+       <th>Name
+       <th>Duration
+       <th>Description
+     <tbody>
+      <tr>
+       <td>miss
+       <td>
+       <td>
+      <tr>
+       <td>db
+       <td>53
+       <td>
+      <tr>
+       <td>app
+       <td>47.2
+       <td>
+      <tr>
+       <td>customView
+       <td>
+       <td>
+      <tr>
+       <td>dc
+       <td>
+       <td>atl
+      <tr>
+       <td>cache
+       <td>23.2
+       <td>Cache Read
+      <tr>
+       <td>total
+       <td>123.4
+       <td>
+    </table>
+    <p><span class="allow-2119">The above header fields communicate six distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for <code>example.com/resource.jpg</code> fetch:</span></p>
+    <ol>
+     <li>There was a cache miss.
+     <li>The request was routed through the "atl" datacenter ("dc").
+     <li>The database ("db") time was 53 ms.
+     <li>A cache read took 23.2 ms.
+     <li>The application server ("app") took 47.2ms to process "customView" template or function.
+     <li>The total time for the request-response cycle on the server was 123.4ms, which is recorded at the end of the response and delivered via a trailer field.
+    </ol>
+    <p>The application can collect, process, and act on the provided metrics via the provided JavaScript interface:</p>
+<pre class="example highlight" id="example-javascript-api"><a class="self-link" href="#example-javascript-api"></a><c- c1>// serverTiming entries can live on 'navigation' and 'resource' entries</c->
+<c- k>for</c-> <c- p>(</c-><c- a>const</c-> entryType <c- k>of</c-> <c- p>[</c-><c- t>'navigation'</c-><c- p>,</c-> <c- t>'resource'</c-><c- p>])</c-> <c- p>{</c->
+  <c- k>for</c-> <c- p>(</c-><c- a>const</c-> <c- p>{</c->name<c- o>:</c-> url<c- p>,</c-> serverTiming<c- p>}</c-> <c- k>of</c-> performance<c- p>.</c->getEntriesByType<c- p>(</c->entryType<c- p>))</c-> <c- p>{</c->
+    <c- c1>// iterate over the serverTiming array</c->
+    <c- k>for</c-> <c- p>(</c-><c- a>const</c-> <c- p>{</c->name<c- p>,</c-> duration<c- p>,</c-> description<c- p>}</c-> <c- k>of</c-> serverTiming<c- p>)</c-> <c- p>{</c->
+      <c- c1>// we only care about "slow" ones</c->
+      <c- k>if</c-> <c- p>(</c->duration <c- o>></c-> <c- mf>200</c-><c- p>)</c-> <c- p>{</c->
+        console<c- p>.</c->info<c- p>(</c-><c- t>'Slow server-timing entry ='</c-><c- p>,</c->
+          JSON<c- p>.</c->stringify<c- p>({</c->url<c- p>,</c-> entryType<c- p>,</c-> name<c- p>,</c-> duration<c- p>,</c-> description<c- p>},</c-> <c- kc>null</c-><c- p>,</c-> <c- mf>2</c-><c- p>))</c->
+      <c- p>}</c->
+    <c- p>}</c->
+  <c- p>}</c->
+<c- p>}</c->
+</pre>
+   </section>
+   <section class="informative">
+    <h2 class="heading informative settled" data-level="7" id="use-cases"><span class="secno">7. </span><span class="content">Use cases</span><a class="self-link" href="#use-cases"></a></h2>
+    
+  <em>This section is non-normative.</em>
+
+  
+    <h3 class="heading settled" data-level="7.1" id="server-timing-in-developer-tools"><span class="secno">7.1. </span><span class="content">Server timing in developer tools</span><a class="self-link" href="#server-timing-in-developer-tools"></a></h3>
+    <p><span class="allow-2119">Server processing time can be a significant fraction of the total request time. For example, a dynamic response may require one or more database queries, cache lookups, API calls, time to process relevant data and render the response, and so on. Similarly, even a static response can be delayed due to overloaded servers, slow caches, or other reasons.</span></p>
+    <p><span class="allow-2119">Today, the user agent developer tools are able to show when the request was initiated, and when the first and last bytes of the response were received. However, there is no visibility into where or how the time was spent on the server, which means that the developer is unable to quickly diagnose if there is a performance bottleneck on the server, and if so, in which component. Today, to answer this question, the developer is required to use different techniques: check the server logs, embed performance data within the response (if possible), use external tools, and so on. This makes identifying and diagnosing performance bottlenecks hard, and in many cases impractical.</span></p>
+    <p>Server Timing defines a standard mechanism that enables the server to communicate relevant performance metrics to the client and allows the client to surface them directly in the developer tools - e.g. the requests can be annotated with server sent metrics to provide insight into where or how the time was spent while generating the response.</p>
+    <h3 class="heading settled" data-level="7.2" id="server-timing-for-automated-analytics"><span class="secno">7.2. </span><span class="content">Server timing for automated analytics</span><a class="self-link" href="#server-timing-for-automated-analytics"></a></h3>
+    <p>In addition to surfacing server sent performance metrics in the developer tools, a standard JavaScript interface enables analytics tools to automatically collect, process, beacon, and aggregate these metrics for operational and performance analysis.</p>
+    <h3 class="heading settled" data-level="7.3" id="measuring-request-routing-performance"><span class="secno">7.3. </span><span class="content">Measuring request routing performance</span><a class="self-link" href="#measuring-request-routing-performance"></a></h3>
+    <p><span class="allow-2119">Server Timing enables origin servers to communicate performance metrics about where or how time is spent while processing the request. However, the same request and response may also be routed through one or more multiple proxies (e.g. cache servers, load balancers, and so on), each of which may introduce own delays and may want to provide performance metrics into where or how the time is spent.</span></p>
+    <p><span class="allow-2119">For example, a CDN edge node may want to report which data center was being used, if the resource was available in cache, and how long it took to retrieve the response from cache or from the origin server. Further, the same process may be repeated by other proxies, thus allowing full end-to-end visibility into how the request was routed and where the time was spent.</span></p>
+    <p><span class="allow-2119">Similarly, when a Service Worker is active, some or all of the navigation and resource requests may be routed through it. Effectively, an active Service Worker is a local proxy that is able to reroute requests, serve cached responses, synthesize responses, and more. As a result, Server Timing enables Service Worker to report custom performance metrics about how the request was processed: whether it was fetched from a server or served from local cache, duration of relevant the processing steps, and so on.</span></p>
+   </section>
+   <section class="informative">
+    <h2 class="heading informative settled" data-level="8" id="acknowledgments"><span class="secno">8. </span><span class="content">Acknowledgments</span><a class="self-link" href="#acknowledgments"></a></h2>
+    
+  <em>This section is non-normative.</em>
+  
+    <p>This document reuses text from the <a data-link-type="biblio" href="#biblio-navigation-timing" title="Navigation Timing">[NAVIGATION-TIMING]</a>, <a data-link-type="biblio" href="#biblio-resource-timing" title="Resource Timing">[RESOURCE-TIMING]</a>, <a data-link-type="biblio" href="#biblio-performance-timeline-2" title="Performance Timeline">[PERFORMANCE-TIMELINE-2]</a>, and <a data-link-type="biblio" href="#biblio-rfc6797" title="HTTP Strict Transport Security (HSTS)">[RFC6797]</a> specifications as permitted by the licenses of those specifications.</p>
+   </section>
+  </main>
+  <div data-fill-with="conformance">
+   <h2 class="heading no-num no-ref settled" id="w3c-conformance"><span class="content">Conformance</span><a class="self-link" href="#w3c-conformance"></a></h2>
+   <h3 class="heading no-num no-ref settled" id="w3c-conventions"><span class="content">Document conventions</span><a class="self-link" href="#w3c-conventions"></a></h3>
+   <p>Conformance requirements are expressed
+    with a combination of descriptive assertions
+    and RFC 2119 terminology.
+    The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL”
+    in the normative parts of this document
+    are to be interpreted as described in RFC 2119.
+    However, for readability,
+    these words do not appear in all uppercase letters in this specification.
+
+    </p>
+   <p>All of the text of this specification is normative
+    except sections explicitly marked as non-normative, examples, and notes. <a data-link-type="biblio" href="#biblio-rfc2119" title="Key words for use in RFCs to Indicate Requirement Levels">[RFC2119]</a>
+
+    </p>
+   <p>Examples in this specification are introduced with the words “for example”
+    or are set apart from the normative text
+    with <code>class="example"</code>,
+    like this:
+
+    </p>
+   <div class="example" id="w3c-example">
+    <a class="self-link" href="#w3c-example"></a>
+        
+    <p>This is an example of an informative example.
+    </p>
+   </div>
+   <p>Informative notes begin with the word “Note”
+    and are set apart from the normative text
+    with <code>class="note"</code>,
+    like this:
+
+    </p>
+   <p class="note" role="note">Note, this is an informative note.</p>
+   <section>
+    <h3 class="heading no-num no-ref settled" id="w3c-conformant-algorithms"><span class="content">Conformant Algorithms</span><a class="self-link" href="#w3c-conformant-algorithms"></a></h3>
+    <p>Requirements phrased in the imperative as part of algorithms
+    (such as "strip any leading space characters"
+    or "return false and abort these steps")
+    are to be interpreted with the meaning of the key word
+    ("must", "should", "may", etc)
+    used in introducing the algorithm.
+
+    </p>
+    <p>Conformance requirements phrased as algorithms or specific steps
+    can be implemented in any manner,
+    so long as the end result is equivalent.
+    In particular, the algorithms defined in this specification
+    are intended to be easy to understand
+    and are not intended to be performant.
+    Implementers are encouraged to optimize.
+</p>
+   </section>
+  </div>
+  <script src="https://www.w3.org/scripts/TR/2021/fixup.js"></script>
+  <h2 class="heading no-num no-ref settled" id="index"><span class="content">Index</span><a class="self-link" href="#index"></a></h2>
+  <h3 class="heading no-num no-ref settled" id="index-defined-here"><span class="content">Terms defined by this specification</span><a class="self-link" href="#index-defined-here"></a></h3>
+  <ul class="index">
+   <li>
+    description
+    <ul>
+     <li><a href="#dom-performanceservertiming-description">attribute for PerformanceServerTiming</a><span>, in § 3</span>
+     <li><a href="#performanceservertiming-description">dfn for PerformanceServerTiming</a><span>, in § 3.3</span>
+    </ul>
+   <li>
+    duration
+    <ul>
+     <li><a href="#dom-performanceservertiming-duration">attribute for PerformanceServerTiming</a><span>, in § 3</span>
+     <li><a href="#performanceservertiming-duration">dfn for PerformanceServerTiming</a><span>, in § 3.2</span>
+    </ul>
+   <li><a href="#performanceservertiming-metric-name">metric name</a><span>, in § 3.3</span>
+   <li>
+    name
+    <ul>
+     <li><a href="#dom-performanceservertiming-name">attribute for PerformanceServerTiming</a><span>, in § 3</span>
+     <li><a href="#performanceservertiming-name">dfn for PerformanceServerTiming</a><span>, in § 3.1</span>
+    </ul>
+   <li><a href="#performanceservertiming-params">params</a><span>, in § 3.3</span>
+   <li><a href="#parse-a-server-timing-header-field">parse a server-timing header field</a><span>, in § 2</span>
+   <li><a href="#performanceservertiming">PerformanceServerTiming</a><span>, in § 3</span>
+   <li>
+    serverTiming
+    <ul>
+     <li><a href="#dom-performanceresourcetiming-servertiming">attribute for PerformanceResourceTiming</a><span>, in § 3.4</span>
+     <li><a href="#performanceresourcetiming-servertiming">dfn for PerformanceResourceTiming</a><span>, in § 3.5</span>
+    </ul>
+   <li><a href="#server-timing-header-field">Server-Timing header field</a><span>, in § 2</span>
+   <li><a href="#performanceservertiming-tojson">toJSON</a><span>, in § 3</span>
+   <li><a href="#dom-performanceservertiming-tojson">toJSON()</a><span>, in § 3</span>
+  </ul>
+  <h3 class="heading no-num no-ref settled" id="index-defined-elsewhere"><span class="content">Terms defined by reference</span><a class="self-link" href="#index-defined-elsewhere"></a></h3>
+  <ul class="index">
+   <li>
+    <a data-link-type="biblio">[FETCH]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="4456bfd9">collecting an HTTP quoted string</span>
+     <li><span class="dfn-paneled" id="8ced174c">server-timing headers</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[HR-TIME-3]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="00c8c5e6">DOMHighResTimeStamp</span>
+     <li><span class="dfn-paneled" id="4b2c8c72">duration</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[HTML]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="f5468b1c">rules for parsing floating-point number values</span>
+     <li><span class="dfn-paneled" id="7393da89">same origin</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[INFRA]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="53275e46">append</span>
+     <li><span class="dfn-paneled" id="915aff5e">code point</span>
+     <li><span class="dfn-paneled" id="d24334b4">collect a sequence of code points</span>
+     <li><span class="dfn-paneled" id="60184fa5">collecting a sequence of code points</span>
+     <li><span class="dfn-paneled" id="f937b7b6">continue</span>
+     <li><span class="dfn-paneled" id="1243a891">exist</span>
+     <li><span class="dfn-paneled" id="f02cd417">iterate</span>
+     <li><span class="dfn-paneled" id="649608b9">list</span>
+     <li><span class="dfn-paneled" id="84b454ff">ordered map</span>
+     <li><span class="dfn-paneled" id="75bee4d5">position variable</span>
+     <li><span class="dfn-paneled" id="0e6b2056">set</span>
+     <li><span class="dfn-paneled" id="50c91fa5">skip ASCII whitespace</span>
+     <li><span class="dfn-paneled" id="a37f05fd">strip leading and trailing ASCII whitespace</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[RESOURCE-TIMING]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="f17ac856">PerformanceResourceTiming</span>
+     <li><span class="dfn-paneled" id="438f6d23">timing info</span>
+    </ul>
+   <li>
+    <a data-link-type="biblio">[WEBIDL]</a> defines the following terms:
+    <ul>
+     <li><span class="dfn-paneled" id="8855a9aa">DOMString</span>
+     <li><span class="dfn-paneled" id="f4531911">Default</span>
+     <li><span class="dfn-paneled" id="889e932f">Exposed</span>
+     <li><span class="dfn-paneled" id="dcf5fafa">FrozenArray</span>
+     <li><span class="dfn-paneled" id="dc7feabb">default toJSON steps</span>
+     <li><span class="dfn-paneled" id="efd1ec5d">object</span>
+     <li><span class="dfn-paneled" id="4013a022">this</span>
+    </ul>
+  </ul>
+  <h2 class="heading no-num no-ref settled" id="references"><span class="content">References</span><a class="self-link" href="#references"></a></h2>
+  <h3 class="heading no-num no-ref settled" id="normative"><span class="content">Normative References</span><a class="self-link" href="#normative"></a></h3>
+  <dl>
+   <dt id="biblio-fetch">[FETCH]
+   <dd>Anne van Kesteren. <a href="https://fetch.spec.whatwg.org/"><cite>Fetch Standard</cite></a>. Living Standard. URL: <a href="https://fetch.spec.whatwg.org/">https://fetch.spec.whatwg.org/</a>
+   <dt id="biblio-hr-time-3">[HR-TIME-3]
+   <dd>Yoav Weiss. <a href="https://w3c.github.io/hr-time/"><cite>High Resolution Time</cite></a>. URL: <a href="https://w3c.github.io/hr-time/">https://w3c.github.io/hr-time/</a>
+   <dt id="biblio-html">[HTML]
+   <dd>Anne van Kesteren; et al. <a href="https://html.spec.whatwg.org/multipage/"><cite>HTML Standard</cite></a>. Living Standard. URL: <a href="https://html.spec.whatwg.org/multipage/">https://html.spec.whatwg.org/multipage/</a>
+   <dt id="biblio-infra">[INFRA]
+   <dd>Anne van Kesteren; Domenic Denicola. <a href="https://infra.spec.whatwg.org/"><cite>Infra Standard</cite></a>. Living Standard. URL: <a href="https://infra.spec.whatwg.org/">https://infra.spec.whatwg.org/</a>
+   <dt id="biblio-resource-timing">[RESOURCE-TIMING]
+   <dd>Yoav Weiss; Noam Rosenthal. <a href="https://w3c.github.io/resource-timing/"><cite>Resource Timing</cite></a>. URL: <a href="https://w3c.github.io/resource-timing/">https://w3c.github.io/resource-timing/</a>
+   <dt id="biblio-rfc2119">[RFC2119]
+   <dd>S. Bradner. <a href="https://datatracker.ietf.org/doc/html/rfc2119"><cite>Key words for use in RFCs to Indicate Requirement Levels</cite></a>. March 1997. Best Current Practice. URL: <a href="https://datatracker.ietf.org/doc/html/rfc2119">https://datatracker.ietf.org/doc/html/rfc2119</a>
+   <dt id="biblio-rfc3864">[RFC3864]
+   <dd>G. Klyne; M. Nottingham; J. Mogul. <a href="https://www.rfc-editor.org/rfc/rfc3864"><cite>Registration Procedures for Message Header Fields</cite></a>. September 2004. Best Current Practice. URL: <a href="https://www.rfc-editor.org/rfc/rfc3864">https://www.rfc-editor.org/rfc/rfc3864</a>
+   <dt id="biblio-rfc5234">[RFC5234]
+   <dd>D. Crocker, Ed.; P. Overell. <a href="https://www.rfc-editor.org/rfc/rfc5234"><cite>Augmented BNF for Syntax Specifications: ABNF</cite></a>. January 2008. Internet Standard. URL: <a href="https://www.rfc-editor.org/rfc/rfc5234">https://www.rfc-editor.org/rfc/rfc5234</a>
+   <dt id="biblio-rfc7230">[RFC7230]
+   <dd>R. Fielding, Ed.; J. Reschke, Ed.. <a href="https://httpwg.org/specs/rfc7230.html"><cite>Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing</cite></a>. June 2014. Proposed Standard. URL: <a href="https://httpwg.org/specs/rfc7230.html">https://httpwg.org/specs/rfc7230.html</a>
+   <dt id="biblio-webidl">[WEBIDL]
+   <dd>Edgar Chen; Timothy Gu. <a href="https://webidl.spec.whatwg.org/"><cite>Web IDL Standard</cite></a>. Living Standard. URL: <a href="https://webidl.spec.whatwg.org/">https://webidl.spec.whatwg.org/</a>
+  </dl>
+  <h3 class="heading no-num no-ref settled" id="informative"><span class="content">Informative References</span><a class="self-link" href="#informative"></a></h3>
+  <dl>
+   <dt id="biblio-navigation-timing">[NAVIGATION-TIMING]
+   <dd>Zhiheng Wang. <a href="https://www.w3.org/TR/navigation-timing/"><cite>Navigation Timing</cite></a>. 17 December 2012. REC. URL: <a href="https://www.w3.org/TR/navigation-timing/">https://www.w3.org/TR/navigation-timing/</a>
+   <dt id="biblio-performance-timeline-2">[PERFORMANCE-TIMELINE-2]
+   <dd>Nicolas Pena Moreno. <a href="https://w3c.github.io/performance-timeline/"><cite>Performance Timeline</cite></a>. URL: <a href="https://w3c.github.io/performance-timeline/">https://w3c.github.io/performance-timeline/</a>
+   <dt id="biblio-rfc6797">[RFC6797]
+   <dd>J. Hodges; C. Jackson; A. Barth. <a href="https://www.rfc-editor.org/rfc/rfc6797"><cite>HTTP Strict Transport Security (HSTS)</cite></a>. November 2012. Proposed Standard. URL: <a href="https://www.rfc-editor.org/rfc/rfc6797">https://www.rfc-editor.org/rfc/rfc6797</a>
+  </dl>
+  <h2 class="heading no-num no-ref settled" id="idl-index"><span class="content">IDL Index</span><a class="self-link" href="#idl-index"></a></h2>
+<pre class="def highlight idl">[<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Exposed"><c- g>Exposed</c-></a>=(<c- n>Window</c->,<c- n>Worker</c->)]
+<c- b>interface</c-> <a href="#performanceservertiming"><code><c- g>PerformanceServerTiming</c-></code></a> {
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString"><c- b>DOMString</c-></a> <a data-readonly data-type="DOMString" href="#dom-performanceservertiming-name"><code><c- g>name</c-></code></a>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a data-link-type="idl-name" href="https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp"><c- n>DOMHighResTimeStamp</c-></a> <a data-readonly data-type="DOMHighResTimeStamp" href="#dom-performanceservertiming-duration"><code><c- g>duration</c-></code></a>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString"><c- b>DOMString</c-></a> <a data-readonly data-type="DOMString" href="#dom-performanceservertiming-description"><code><c- g>description</c-></code></a>;
+  [<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Default"><c- g>Default</c-></a>] <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-object"><c- b>object</c-></a> <a href="#dom-performanceservertiming-tojson"><code><c- g>toJSON</c-></code></a>();
+};
+
+[<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Exposed"><c- g>Exposed</c-></a>=(<c- n>Window</c->,<c- n>Worker</c->)]
+<c- b>partial</c-> <c- b>interface</c-> <a class="idl-code" data-link-type="interface" href="https://w3c.github.io/resource-timing/#performanceresourcetiming"><c- g>PerformanceResourceTiming</c-></a> {
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-frozen-array"><c- b>FrozenArray</c-></a>&lt;<a data-link-type="idl-name" href="#performanceservertiming"><c- n>PerformanceServerTiming</c-></a>> <a data-readonly data-type="FrozenArray<PerformanceServerTiming>" href="#dom-performanceresourcetiming-servertiming"><code><c- g>serverTiming</c-></code></a>;
+};
+
+</pre>
+  <details class="mdn-anno unpositioned" data-anno-for="servertiming-attribute">
+   <summary><b class="all-engines-flag" title="This feature is in all current engines.">✔</b><span>MDN</span></summary>
+   <div class="feature">
+    <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformanceResourceTiming/serverTiming" title="The serverTiming read-only property returns an array of PerformanceServerTiming entries containing server timing metrics.">PerformanceResourceTiming/serverTiming</a></p>
+    <p class="all-engines-text">In all current engines.</p>
+    <div class="support">
+     <span class="firefox yes"><span>Firefox</span><span>61+</span></span><span class="safari yes"><span>Safari</span><span>16.4+</span></span><span class="chrome yes"><span>Chrome</span><span>65+</span></span>
+     <hr>
+     <span class="no opera"><span>Opera</span><span>?</span></span><span class="edge_blink yes"><span>Edge</span><span>79+</span></span>
+     <hr>
+     <span class="edge no"><span>Edge (Legacy)</span><span>?</span></span><span class="ie no"><span>IE</span><span>None</span></span>
+     <hr>
+     <span class="firefox_android no"><span>Firefox for Android</span><span>?</span></span><span class="no safari_ios"><span>iOS Safari</span><span>?</span></span><span class="chrome_android no"><span>Chrome for Android</span><span>?</span></span><span class="no webview_android"><span>Android WebView</span><span>?</span></span><span class="no samsunginternet_android"><span>Samsung Internet</span><span>?</span></span><span class="no opera_android"><span>Opera Mobile</span><span>?</span></span>
+    </div>
+   </div>
+  </details>
+  <details class="mdn-anno unpositioned" data-anno-for="dom-performanceservertiming-description">
+   <summary><b class="all-engines-flag" title="This feature is in all current engines.">✔</b><span>MDN</span></summary>
+   <div class="feature">
+    <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformanceServerTiming/description" title="The description read-only property returns a string value of the server-specified metric description, or an empty string.">PerformanceServerTiming/description</a></p>
+    <p class="all-engines-text">In all current engines.</p>
+    <div class="support">
+     <span class="firefox yes"><span>Firefox</span><span>61+</span></span><span class="safari yes"><span>Safari</span><span>16.4+</span></span><span class="chrome yes"><span>Chrome</span><span>65+</span></span>
+     <hr>
+     <span class="no opera"><span>Opera</span><span>?</span></span><span class="edge_blink yes"><span>Edge</span><span>79+</span></span>
+     <hr>
+     <span class="edge no"><span>Edge (Legacy)</span><span>?</span></span><span class="ie no"><span>IE</span><span>None</span></span>
+     <hr>
+     <span class="firefox_android no"><span>Firefox for Android</span><span>?</span></span><span class="no safari_ios"><span>iOS Safari</span><span>?</span></span><span class="chrome_android no"><span>Chrome for Android</span><span>?</span></span><span class="no webview_android"><span>Android WebView</span><span>?</span></span><span class="no samsunginternet_android"><span>Samsung Internet</span><span>?</span></span><span class="no opera_android"><span>Opera Mobile</span><span>?</span></span>
+    </div>
+   </div>
+  </details>
+  <details class="mdn-anno unpositioned" data-anno-for="dom-performanceservertiming-duration">
+   <summary><b class="all-engines-flag" title="This feature is in all current engines.">✔</b><span>MDN</span></summary>
+   <div class="feature">
+    <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformanceServerTiming/duration" title="The duration read-only property returns a double that contains the server-specified metric duration, or the value 0.0.">PerformanceServerTiming/duration</a></p>
+    <p class="all-engines-text">In all current engines.</p>
+    <div class="support">
+     <span class="firefox yes"><span>Firefox</span><span>61+</span></span><span class="safari yes"><span>Safari</span><span>16.4+</span></span><span class="chrome yes"><span>Chrome</span><span>65+</span></span>
+     <hr>
+     <span class="no opera"><span>Opera</span><span>?</span></span><span class="edge_blink yes"><span>Edge</span><span>79+</span></span>
+     <hr>
+     <span class="edge no"><span>Edge (Legacy)</span><span>?</span></span><span class="ie no"><span>IE</span><span>None</span></span>
+     <hr>
+     <span class="firefox_android no"><span>Firefox for Android</span><span>?</span></span><span class="no safari_ios"><span>iOS Safari</span><span>?</span></span><span class="chrome_android no"><span>Chrome for Android</span><span>?</span></span><span class="no webview_android"><span>Android WebView</span><span>?</span></span><span class="no samsunginternet_android"><span>Samsung Internet</span><span>?</span></span><span class="no opera_android"><span>Opera Mobile</span><span>?</span></span>
+    </div>
+   </div>
+  </details>
+  <details class="mdn-anno unpositioned" data-anno-for="dom-performanceservertiming-name">
+   <summary><b class="all-engines-flag" title="This feature is in all current engines.">✔</b><span>MDN</span></summary>
+   <div class="feature">
+    <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformanceServerTiming/name" title="The name read-only property returns a string value of the server-specified metric name.">PerformanceServerTiming/name</a></p>
+    <p class="all-engines-text">In all current engines.</p>
+    <div class="support">
+     <span class="firefox yes"><span>Firefox</span><span>61+</span></span><span class="safari yes"><span>Safari</span><span>16.4+</span></span><span class="chrome yes"><span>Chrome</span><span>65+</span></span>
+     <hr>
+     <span class="no opera"><span>Opera</span><span>?</span></span><span class="edge_blink yes"><span>Edge</span><span>79+</span></span>
+     <hr>
+     <span class="edge no"><span>Edge (Legacy)</span><span>?</span></span><span class="ie no"><span>IE</span><span>None</span></span>
+     <hr>
+     <span class="firefox_android no"><span>Firefox for Android</span><span>?</span></span><span class="no safari_ios"><span>iOS Safari</span><span>?</span></span><span class="chrome_android no"><span>Chrome for Android</span><span>?</span></span><span class="no webview_android"><span>Android WebView</span><span>?</span></span><span class="no samsunginternet_android"><span>Samsung Internet</span><span>?</span></span><span class="no opera_android"><span>Opera Mobile</span><span>?</span></span>
+    </div>
+   </div>
+  </details>
+  <details class="mdn-anno unpositioned" data-anno-for="dom-performanceservertiming-tojson">
+   <summary><b class="all-engines-flag" title="This feature is in all current engines.">✔</b><span>MDN</span></summary>
+   <div class="feature">
+    <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformanceServerTiming/toJSON" title="The toJSON() method of the PerformanceServerTiming interface is a serializer; it returns a JSON representation of the PerformanceServerTiming object.">PerformanceServerTiming/toJSON</a></p>
+    <p class="all-engines-text">In all current engines.</p>
+    <div class="support">
+     <span class="firefox yes"><span>Firefox</span><span>61+</span></span><span class="safari yes"><span>Safari</span><span>16.4+</span></span><span class="chrome yes"><span>Chrome</span><span>65+</span></span>
+     <hr>
+     <span class="no opera"><span>Opera</span><span>?</span></span><span class="edge_blink yes"><span>Edge</span><span>79+</span></span>
+     <hr>
+     <span class="edge no"><span>Edge (Legacy)</span><span>?</span></span><span class="ie no"><span>IE</span><span>None</span></span>
+     <hr>
+     <span class="firefox_android no"><span>Firefox for Android</span><span>?</span></span><span class="no safari_ios"><span>iOS Safari</span><span>?</span></span><span class="chrome_android no"><span>Chrome for Android</span><span>?</span></span><span class="no webview_android"><span>Android WebView</span><span>?</span></span><span class="no samsunginternet_android"><span>Samsung Internet</span><span>?</span></span><span class="no opera_android"><span>Opera Mobile</span><span>?</span></span>
+    </div>
+   </div>
+  </details>
+  <details class="mdn-anno unpositioned" data-anno-for="the-performanceservertiming-interface">
+   <summary><b class="all-engines-flag" title="This feature is in all current engines.">✔</b><span>MDN</span></summary>
+   <div class="feature">
+    <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/PerformanceServerTiming" title="The PerformanceServerTiming interface surfaces server metrics that are sent with the response in the Server-Timing HTTP header.">PerformanceServerTiming</a></p>
+    <p class="all-engines-text">In all current engines.</p>
+    <div class="support">
+     <span class="firefox yes"><span>Firefox</span><span>61+</span></span><span class="safari yes"><span>Safari</span><span>16.4+</span></span><span class="chrome yes"><span>Chrome</span><span>65+</span></span>
+     <hr>
+     <span class="no opera"><span>Opera</span><span>?</span></span><span class="edge_blink yes"><span>Edge</span><span>79+</span></span>
+     <hr>
+     <span class="edge no"><span>Edge (Legacy)</span><span>?</span></span><span class="ie no"><span>IE</span><span>None</span></span>
+     <hr>
+     <span class="firefox_android no"><span>Firefox for Android</span><span>?</span></span><span class="no safari_ios"><span>iOS Safari</span><span>?</span></span><span class="chrome_android no"><span>Chrome for Android</span><span>?</span></span><span class="no webview_android"><span>Android WebView</span><span>?</span></span><span class="no samsunginternet_android"><span>Samsung Internet</span><span>?</span></span><span class="no opera_android"><span>Opera Mobile</span><span>?</span></span>
+    </div>
+   </div>
+  </details>
+  <details class="mdn-anno unpositioned" data-anno-for="the-server-timing-header-field">
+   <summary><span>MDN</span></summary>
+   <div class="feature">
+    <p><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing" title="The Server-Timing header communicates one or more metrics and descriptions for a given request-response cycle. It is used to surface any backend server timing metrics (e.g. database read/write, CPU time, file system access, etc.) in the developer tools in the user&apos;s browser or in the PerformanceServerTiming interface.">Headers/Server-Timing</a></p>
+    <div class="support">
+     <span class="firefox yes"><span>Firefox</span><span>61+</span></span><span class="no safari"><span>Safari</span><span>?</span></span><span class="chrome yes"><span>Chrome</span><span>65+</span></span>
+     <hr>
+     <span class="no opera"><span>Opera</span><span>?</span></span><span class="edge_blink yes"><span>Edge</span><span>79+</span></span>
+     <hr>
+     <span class="edge no"><span>Edge (Legacy)</span><span>None</span></span><span class="ie no"><span>IE</span><span>None</span></span>
+     <hr>
+     <span class="firefox_android no"><span>Firefox for Android</span><span>?</span></span><span class="no safari_ios"><span>iOS Safari</span><span>?</span></span><span class="chrome_android no"><span>Chrome for Android</span><span>?</span></span><span class="no webview_android"><span>Android WebView</span><span>?</span></span><span class="no samsunginternet_android"><span>Samsung Internet</span><span>?</span></span><span class="no opera_android"><span>Opera Mobile</span><span>?</span></span>
+    </div>
+   </div>
+  </details>
+<script>/* Boilerplate: script-dom-helper */
+"use strict";
+function query(sel) { return document.querySelector(sel); }
+
+function queryAll(sel) { return [...document.querySelectorAll(sel)]; }
+
+function iter(obj) {
+	if(!obj) return [];
+	var it = obj[Symbol.iterator];
+	if(it) return it;
+	return Object.entries(obj);
+}
+
+function mk(tagname, attrs, ...children) {
+	const el = document.createElement(tagname);
+	for(const [k,v] of iter(attrs)) {
+		if(k.slice(0,3) == "_on") {
+			const eventName = k.slice(3);
+			el.addEventListener(eventName, v);
+		} else if(k[0] == "_") {
+			// property, not attribute
+			el[k.slice(1)] = v;
+		} else {
+			if(v === false || v == null) {
+        continue;
+      } else if(v === true) {
+        el.setAttribute(k, "");
+        continue;
+      } else {
+  			el.setAttribute(k, v);
+      }
+		}
+	}
+	append(el, children);
+	return el;
+}
+
+/* Create shortcuts for every known HTML element */
+[
+  "a",
+  "abbr",
+  "acronym",
+  "address",
+  "applet",
+  "area",
+  "article",
+  "aside",
+  "audio",
+  "b",
+  "base",
+  "basefont",
+  "bdo",
+  "big",
+  "blockquote",
+  "body",
+  "br",
+  "button",
+  "canvas",
+  "caption",
+  "center",
+  "cite",
+  "code",
+  "col",
+  "colgroup",
+  "datalist",
+  "dd",
+  "del",
+  "details",
+  "dfn",
+  "dialog",
+  "div",
+  "dl",
+  "dt",
+  "em",
+  "embed",
+  "fieldset",
+  "figcaption",
+  "figure",
+  "font",
+  "footer",
+  "form",
+  "frame",
+  "frameset",
+  "head",
+  "header",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "hr",
+  "html",
+  "i",
+  "iframe",
+  "img",
+  "input",
+  "ins",
+  "kbd",
+  "label",
+  "legend",
+  "li",
+  "link",
+  "main",
+  "map",
+  "mark",
+  "meta",
+  "meter",
+  "nav",
+  "nobr",
+  "noscript",
+  "object",
+  "ol",
+  "optgroup",
+  "option",
+  "output",
+  "p",
+  "param",
+  "pre",
+  "progress",
+  "q",
+  "s",
+  "samp",
+  "script",
+  "section",
+  "select",
+  "small",
+  "source",
+  "span",
+  "strike",
+  "strong",
+  "style",
+  "sub",
+  "summary",
+  "sup",
+  "table",
+  "tbody",
+  "td",
+  "template",
+  "textarea",
+  "tfoot",
+  "th",
+  "thead",
+  "time",
+  "title",
+  "tr",
+  "u",
+  "ul",
+  "var",
+  "video",
+  "wbr",
+  "xmp",
+].forEach(tagname=>{
+	mk[tagname] = (...args) => mk(tagname, ...args);
+});
+
+function* nodesFromChildList(children) {
+	for(const child of children.flat(Infinity)) {
+		if(child instanceof Node) {
+			yield child;
+		} else {
+			yield new Text(child);
+		}
+	}
+}
+function append(el, ...children) {
+	for(const child of nodesFromChildList(children)) {
+		if(el instanceof Node) el.appendChild(child);
+		else el.push(child);
+	}
+	return el;
+}
+
+function insertAfter(el, ...children) {
+	for(const child of nodesFromChildList(children)) {
+		el.parentNode.insertBefore(child, el.nextSibling);
+	}
+	return el;
+}
+
+function clearContents(el) {
+	el.innerHTML = "";
+	return el;
+}
+
+function parseHTML(markup) {
+	if(markup.toLowerCase().trim().indexOf('<!doctype') === 0) {
+		const doc = document.implementation.createHTMLDocument("");
+		doc.documentElement.innerHTML = markup;
+		return doc;
+	} else {
+		const el = mk.template({});
+		el.innerHTML = markup;
+		return el.content;
+	}
+}</script>
+<script>/* Boilerplate: script-dfn-panel */
+"use strict";
+{
+let dfnPanelData = {
+"00c8c5e6": {"dfnID":"00c8c5e6","dfnText":"DOMHighResTimeStamp","external":true,"refSections":[{"refs":[{"id":"ref-for-typedefdef-domhighrestimestamp"}],"title":"3. The PerformanceServerTiming Interface"},{"refs":[{"id":"ref-for-typedefdef-domhighrestimestamp\u2460"}],"title":"3.2. duration attribute"}],"url":"https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp"},
+"0e6b2056": {"dfnID":"0e6b2056","dfnText":"set","external":true,"refSections":[{"refs":[{"id":"ref-for-map-set"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#map-set"},
+"1243a891": {"dfnID":"1243a891","dfnText":"exist","external":true,"refSections":[{"refs":[{"id":"ref-for-map-exists"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-map-exists\u2460"}],"title":"3.2. duration attribute"},{"refs":[{"id":"ref-for-map-exists\u2461"}],"title":"3.3. description attribute"}],"url":"https://infra.spec.whatwg.org/#map-exists"},
+"4013a022": {"dfnID":"4013a022","dfnText":"this","external":true,"refSections":[{"refs":[{"id":"ref-for-this"}],"title":"3.1. name attribute"},{"refs":[{"id":"ref-for-this\u2460"},{"id":"ref-for-this\u2461"}],"title":"3.2. duration attribute"},{"refs":[{"id":"ref-for-this\u2462"}],"title":"3.3. description attribute"},{"refs":[{"id":"ref-for-this\u2463"}],"title":"3.5. serverTiming attribute"}],"url":"https://webidl.spec.whatwg.org/#this"},
+"438f6d23": {"dfnID":"438f6d23","dfnText":"timing info","external":true,"refSections":[{"refs":[{"id":"ref-for-dfn-timing-info"}],"title":"3.5. serverTiming attribute"}],"url":"https://w3c.github.io/resource-timing/#dfn-timing-info"},
+"4456bfd9": {"dfnID":"4456bfd9","dfnText":"collecting an HTTP quoted string","external":true,"refSections":[{"refs":[{"id":"ref-for-collect-an-http-quoted-string"}],"title":"2. The Server-Timing Header Field"}],"url":"https://fetch.spec.whatwg.org/#collect-an-http-quoted-string"},
+"4b2c8c72": {"dfnID":"4b2c8c72","dfnText":"duration","external":true,"refSections":[{"refs":[{"id":"ref-for-dfn-duration"},{"id":"ref-for-dfn-duration\u2460"}],"title":"3.2. duration attribute"}],"url":"https://w3c.github.io/hr-time/#dfn-duration"},
+"50c91fa5": {"dfnID":"50c91fa5","dfnText":"skip ASCII whitespace","external":true,"refSections":[{"refs":[{"id":"ref-for-skip-ascii-whitespace"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#skip-ascii-whitespace"},
+"53275e46": {"dfnID":"53275e46","dfnText":"append","external":true,"refSections":[{"refs":[{"id":"ref-for-list-append"}],"title":"3.5. serverTiming attribute"}],"url":"https://infra.spec.whatwg.org/#list-append"},
+"60184fa5": {"dfnID":"60184fa5","dfnText":"collecting a sequence of code points","external":true,"refSections":[{"refs":[{"id":"ref-for-collect-a-sequence-of-code-points"},{"id":"ref-for-collect-a-sequence-of-code-points\u2460"},{"id":"ref-for-collect-a-sequence-of-code-points\u2461"},{"id":"ref-for-collect-a-sequence-of-code-points\u2462"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points"},
+"649608b9": {"dfnID":"649608b9","dfnText":"list","external":true,"refSections":[{"refs":[{"id":"ref-for-list"}],"title":"3.5. serverTiming attribute"}],"url":"https://infra.spec.whatwg.org/#list"},
+"7393da89": {"dfnID":"7393da89","dfnText":"same origin","external":true,"refSections":[{"refs":[{"id":"ref-for-same-origin"},{"id":"ref-for-same-origin\u2460"}],"title":"4. Privacy and Security"}],"url":"https://html.spec.whatwg.org/multipage/browsers.html#same-origin"},
+"75bee4d5": {"dfnID":"75bee4d5","dfnText":"position variable","external":true,"refSections":[{"refs":[{"id":"ref-for-string-position-variable"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#string-position-variable"},
+"84b454ff": {"dfnID":"84b454ff","dfnText":"ordered map","external":true,"refSections":[{"refs":[{"id":"ref-for-ordered-map"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-ordered-map\u2460"}],"title":"3.3. description attribute"}],"url":"https://infra.spec.whatwg.org/#ordered-map"},
+"8855a9aa": {"dfnID":"8855a9aa","dfnText":"DOMString","external":true,"refSections":[{"refs":[{"id":"ref-for-idl-DOMString"},{"id":"ref-for-idl-DOMString\u2460"}],"title":"3. The PerformanceServerTiming Interface"}],"url":"https://webidl.spec.whatwg.org/#idl-DOMString"},
+"889e932f": {"dfnID":"889e932f","dfnText":"Exposed","external":true,"refSections":[{"refs":[{"id":"ref-for-Exposed"}],"title":"3. The PerformanceServerTiming Interface"},{"refs":[{"id":"ref-for-Exposed\u2460"}],"title":"3.4. Extension to the PerformanceResourceTiming interface"}],"url":"https://webidl.spec.whatwg.org/#Exposed"},
+"8ced174c": {"dfnID":"8ced174c","dfnText":"server-timing headers","external":true,"refSections":[{"refs":[{"id":"ref-for-fetch-timing-info-server-timing-headers"}],"title":"3.5. serverTiming attribute"}],"url":"https://fetch.spec.whatwg.org/#fetch-timing-info-server-timing-headers"},
+"915aff5e": {"dfnID":"915aff5e","dfnText":"code point","external":true,"refSections":[{"refs":[{"id":"ref-for-code-point"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#code-point"},
+"a37f05fd": {"dfnID":"a37f05fd","dfnText":"strip leading and trailing ASCII whitespace","external":true,"refSections":[{"refs":[{"id":"ref-for-strip-leading-and-trailing-ascii-whitespace"},{"id":"ref-for-strip-leading-and-trailing-ascii-whitespace\u2460"},{"id":"ref-for-strip-leading-and-trailing-ascii-whitespace\u2461"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace"},
+"d24334b4": {"dfnID":"d24334b4","dfnText":"collect a sequence of code points","external":true,"refSections":[{"refs":[{"id":"ref-for-collect-a-sequence-of-code-points"},{"id":"ref-for-collect-a-sequence-of-code-points\u2460"},{"id":"ref-for-collect-a-sequence-of-code-points\u2461"},{"id":"ref-for-collect-a-sequence-of-code-points\u2462"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points"},
+"dc7feabb": {"dfnID":"dc7feabb","dfnText":"default toJSON steps","external":true,"refSections":[{"refs":[{"id":"ref-for-default-tojson-steps"}],"title":"3. The PerformanceServerTiming Interface"}],"url":"https://webidl.spec.whatwg.org/#default-tojson-steps"},
+"dcf5fafa": {"dfnID":"dcf5fafa","dfnText":"FrozenArray","external":true,"refSections":[{"refs":[{"id":"ref-for-idl-frozen-array"}],"title":"3.4. Extension to the PerformanceResourceTiming interface"}],"url":"https://webidl.spec.whatwg.org/#idl-frozen-array"},
+"dom-performanceresourcetiming-servertiming": {"dfnID":"dom-performanceresourcetiming-servertiming","dfnText":"serverTiming","external":false,"refSections":[],"url":"#dom-performanceresourcetiming-servertiming"},
+"dom-performanceservertiming-description": {"dfnID":"dom-performanceservertiming-description","dfnText":"description","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceservertiming-description"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-dom-performanceservertiming-description\u2460"}],"title":"3.3. description attribute"}],"url":"#dom-performanceservertiming-description"},
+"dom-performanceservertiming-duration": {"dfnID":"dom-performanceservertiming-duration","dfnText":"duration","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceservertiming-duration"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-dom-performanceservertiming-duration\u2460"},{"id":"ref-for-dom-performanceservertiming-duration\u2461"},{"id":"ref-for-dom-performanceservertiming-duration\u2462"}],"title":"3.2. duration attribute"}],"url":"#dom-performanceservertiming-duration"},
+"dom-performanceservertiming-name": {"dfnID":"dom-performanceservertiming-name","dfnText":"name","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceservertiming-name"}],"title":"3.1. name attribute"}],"url":"#dom-performanceservertiming-name"},
+"dom-performanceservertiming-tojson": {"dfnID":"dom-performanceservertiming-tojson","dfnText":"toJSON","external":false,"refSections":[],"url":"#dom-performanceservertiming-tojson"},
+"efd1ec5d": {"dfnID":"efd1ec5d","dfnText":"object","external":true,"refSections":[{"refs":[{"id":"ref-for-idl-object"}],"title":"3. The PerformanceServerTiming Interface"}],"url":"https://webidl.spec.whatwg.org/#idl-object"},
+"f02cd417": {"dfnID":"f02cd417","dfnText":"iterate","external":true,"refSections":[{"refs":[{"id":"ref-for-list-iterate"}],"title":"3.5. serverTiming attribute"}],"url":"https://infra.spec.whatwg.org/#list-iterate"},
+"f17ac856": {"dfnID":"f17ac856","dfnText":"PerformanceResourceTiming","external":true,"refSections":[{"refs":[{"id":"ref-for-performanceresourcetiming"},{"id":"ref-for-performanceresourcetiming\u2460"},{"id":"ref-for-performanceresourcetiming\u2461"}],"title":"3.4. Extension to the PerformanceResourceTiming interface"}],"url":"https://w3c.github.io/resource-timing/#performanceresourcetiming"},
+"f4531911": {"dfnID":"f4531911","dfnText":"Default","external":true,"refSections":[{"refs":[{"id":"ref-for-Default"}],"title":"3. The PerformanceServerTiming Interface"}],"url":"https://webidl.spec.whatwg.org/#Default"},
+"f5468b1c": {"dfnID":"f5468b1c","dfnText":"rules for parsing floating-point number values","external":true,"refSections":[{"refs":[{"id":"ref-for-rules-for-parsing-floating-point-number-values"}],"title":"3.2. duration attribute"}],"url":"https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values"},
+"f937b7b6": {"dfnID":"f937b7b6","dfnText":"continue","external":true,"refSections":[{"refs":[{"id":"ref-for-iteration-continue"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#iteration-continue"},
+"parse-a-server-timing-header-field": {"dfnID":"parse-a-server-timing-header-field","dfnText":"parse a server-timing header field","external":false,"refSections":[{"refs":[{"id":"ref-for-parse-a-server-timing-header-field"}],"title":"3.5. serverTiming attribute"}],"url":"#parse-a-server-timing-header-field"},
+"performanceresourcetiming-servertiming": {"dfnID":"performanceresourcetiming-servertiming","dfnText":"serverTiming","external":false,"refSections":[],"url":"#performanceresourcetiming-servertiming"},
+"performanceservertiming": {"dfnID":"performanceservertiming","dfnText":"PerformanceServerTiming","external":false,"refSections":[{"refs":[{"id":"ref-for-performanceservertiming"}],"title":"1. Introduction"},{"refs":[{"id":"ref-for-performanceservertiming\u2460"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-performanceservertiming\u2461"}],"title":"3. The PerformanceServerTiming Interface"},{"refs":[{"id":"ref-for-performanceservertiming\u2462"},{"id":"ref-for-performanceservertiming\u2463"}],"title":"3.3. description attribute"},{"refs":[{"id":"ref-for-performanceservertiming\u2464"}],"title":"3.4. Extension to the PerformanceResourceTiming interface"}],"url":"#performanceservertiming"},
+"performanceservertiming-description": {"dfnID":"performanceservertiming-description","dfnText":"description","external":false,"refSections":[],"url":"#performanceservertiming-description"},
+"performanceservertiming-duration": {"dfnID":"performanceservertiming-duration","dfnText":"duration","external":false,"refSections":[],"url":"#performanceservertiming-duration"},
+"performanceservertiming-metric-name": {"dfnID":"performanceservertiming-metric-name","dfnText":"metric name","external":false,"refSections":[{"refs":[{"id":"ref-for-performanceservertiming-metric-name"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-performanceservertiming-metric-name\u2460"}],"title":"3.1. name attribute"}],"url":"#performanceservertiming-metric-name"},
+"performanceservertiming-name": {"dfnID":"performanceservertiming-name","dfnText":"name","external":false,"refSections":[],"url":"#performanceservertiming-name"},
+"performanceservertiming-params": {"dfnID":"performanceservertiming-params","dfnText":"params","external":false,"refSections":[{"refs":[{"id":"ref-for-performanceservertiming-params"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-performanceservertiming-params\u2460"},{"id":"ref-for-performanceservertiming-params\u2461"}],"title":"3.2. duration attribute"},{"refs":[{"id":"ref-for-performanceservertiming-params\u2462"}],"title":"3.3. description attribute"}],"url":"#performanceservertiming-params"},
+"performanceservertiming-tojson": {"dfnID":"performanceservertiming-tojson","dfnText":"toJSON","external":false,"refSections":[],"url":"#performanceservertiming-tojson"},
+"server-timing-header-field": {"dfnID":"server-timing-header-field","dfnText":"Server-Timing header field","external":false,"refSections":[{"refs":[{"id":"ref-for-server-timing-header-field"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-server-timing-header-field\u2460"}],"title":"5.1. Server-Timing Header Field"}],"url":"#server-timing-header-field"},
+};
+
+document.addEventListener("DOMContentLoaded", ()=>{
+    genAllDfnPanels();
+
+    document.body.addEventListener("click", (e) => {
+        // If not handled already, just hide all dfn panels.
+        hideAllDfnPanels();
+    });
+});
+
+window.addEventListener("resize", () => {
+    // Pin any visible dfn panel
+    queryAll(".dfn-panel.on, .dfn-panel.activated").forEach(el=>positionDfnPanel(el));
+});
+
+function genAllDfnPanels() {
+    for(const panelData of Object.values(dfnPanelData)) {
+        const dfnID = panelData.dfnID;
+        const dfn = document.getElementById(dfnID);
+        if(!dfn) {
+            console.log(`Can't find dfn#${dfnID}.`, panelData);
+            continue;
+        }
+        dfn.panelData = panelData;
+        insertDfnPopupAction(dfn);
+    }
+}
+
+function genDfnPanel(dfn, { dfnID, url, dfnText, refSections, external }) {
+    const dfnPanel = mk.aside({
+        class: "dfn-panel on",
+        id: `infopanel-for-${dfnID}`,
+        "data-for": dfnID,
+        "aria-labelled-by":`infopaneltitle-for-${dfnID}`,
+        },
+        mk.span({id:`infopaneltitle-for-${dfnID}`, style:"display:none"},
+            `Info about the '${dfnText}' ${external?"external":""} reference.`),
+        mk.a({href:url, class:"dfn-link"}, url),
+        refSections.length == 0 ? [] :
+            mk.b({}, "Referenced in:"),
+            mk.ul({},
+                ...refSections.map(section=>
+                    mk.li({},
+                        ...section.refs.map((ref, refI)=>
+                            [
+                                mk.a({ href: `#${ref.id}` },
+                                    (refI == 0) ? section.title : `(${refI + 1})`
+                                ),
+                                " ",
+                            ]
+                        ),
+                    ),
+                ),
+            ),
+        genLinkingSyntaxes(dfn),
+    );
+
+    dfnPanel.addEventListener('click', (event) => {
+        if (event.target.nodeName == 'A') {
+            scrollToTargetAndHighlight(event);
+            pinDfnPanel(dfnPanel);
+        }
+        event.stopPropagation();
+        refocusOnTarget(event);
+    });
+    dfnPanel.addEventListener('keydown', (event) => {
+        if(event.keyCode == 27) { // Escape key
+            hideDfnPanel({dfnPanel});
+            event.stopPropagation();
+            event.preventDefault();
+        }
+    });
+
+    dfnPanel.dfn = dfn;
+    dfn.dfnPanel = dfnPanel;
+    return dfnPanel;
+}
+
+
+
+function hideAllDfnPanels() {
+    // Delete the currently-active dfn panel.
+    queryAll(".dfn-panel").forEach(dfnPanel=>hideDfnPanel({dfnPanel}));
+}
+
+function showDfnPanel(dfn) {
+    hideAllDfnPanels(); // Only display one at a time.
+
+    dfn.setAttribute("aria-expanded", "true");
+
+    const dfnPanel = genDfnPanel(dfn, dfn.panelData);
+
+    // Give the dfn a unique tabindex, and then
+    // give all the tabbable panel bits successive indexes.
+    let tabIndex = 100;
+    dfn.tabIndex = tabIndex++;
+    const tabbable = dfnPanel.querySelectorAll(":is(a, button)");
+    for (const el of tabbable) {
+        el.tabIndex = tabIndex++;
+    }
+
+    append(document.body, dfnPanel);
+    positionDfnPanel(dfnPanel);
+}
+
+function positionDfnPanel(dfnPanel) {
+    const dfn = dfnPanel.dfn;
+    const dfnPos = getBounds(dfn);
+    dfnPanel.style.top = dfnPos.bottom + "px";
+    dfnPanel.style.left = dfnPos.left + "px";
+
+    const panelPos = dfnPanel.getBoundingClientRect();
+    const panelMargin = 8;
+    const maxRight = document.body.parentNode.clientWidth - panelMargin;
+    if (panelPos.right > maxRight) {
+        const overflowAmount = panelPos.right - maxRight;
+        const newLeft = Math.max(panelMargin, dfnPos.left - overflowAmount);
+        dfnPanel.style.left = newLeft + "px";
+    }
+}
+
+function pinDfnPanel(dfnPanel) {
+    // Switch it to "activated" state, which pins it.
+    dfnPanel.classList.add("activated");
+    dfnPanel.style.position = "fixed";
+    dfnPanel.style.left = null;
+    dfnPanel.style.top = null;
+}
+
+function hideDfnPanel({dfn, dfnPanel}) {
+    if(!dfnPanel) dfnPanel = dfn.dfnPanel;
+    if(!dfn) dfn = dfnPanel.dfn;
+    dfn.dfnPanel = undefined;
+    dfnPanel.dfn = undefined;
+    dfn.setAttribute("aria-expanded", "false");
+    dfn.tabIndex = undefined;
+    dfnPanel.remove()
+}
+
+function toggleDfnPanel(dfn) {
+    if(dfn.dfnPanel) {
+        hideDfnPanel(dfn);
+    } else {
+        showDfnPanel(dfn);
+    }
+}
+
+function insertDfnPopupAction(dfn) {
+    dfn.setAttribute('role', 'button');
+    dfn.setAttribute('aria-expanded', 'false')
+    dfn.tabIndex = 0;
+    dfn.classList.add('has-dfn-panel');
+    dfn.addEventListener('click', (event) => {
+        toggleDfnPanel(dfn);
+        event.stopPropagation();
+    });
+    dfn.addEventListener('keypress', (event) => {
+        const kc = event.keyCode;
+        // 32->Space, 13->Enter
+        if(kc == 32 || kc == 13) {
+            toggleDfnPanel(dfn);
+            event.stopPropagation();
+            event.preventDefault();
+        }
+    });
+}
+
+function refocusOnTarget(event) {
+    const target = event.target;
+    setTimeout(() => {
+        // Refocus on the event.target element.
+        // This is needed after browser scrolls to the destination.
+        target.focus();
+    });
+}
+
+// TODO: shared util
+// Returns the root-level absolute position {left and top} of element.
+function getBounds(el, relativeTo=document.body) {
+    const relativeRect = relativeTo.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const top = elRect.top - relativeRect.top;
+    const left = elRect.left - relativeRect.left;
+    return {
+        top,
+        left,
+        bottom: top + elRect.height,
+        right: left + elRect.width,
+    }
+}
+
+function scrollToTargetAndHighlight(event) {
+    let hash = event.target.hash;
+    if (hash) {
+        hash = decodeURIComponent(hash.substring(1));
+        const dest = document.getElementById(hash);
+        if (dest) {
+            dest.classList.add('highlighted');
+            setTimeout(() => dest.classList.remove('highlighted'), 1000);
+        }
+    }
+}
+
+// Functions, divided by link type, that wrap an autolink's
+// contents with the appropriate outer syntax.
+// Alternately, a string naming another type they format
+// the same as.
+function needsFor(type) {
+    switch(type) {
+        case "descriptor":
+        case "value":
+        case "element-attr":
+        case "attr-value":
+        case "element-state":
+        case "method":
+        case "constructor":
+        case "argument":
+        case "attribute":
+        case "const":
+        case "dict-member":
+        case "event":
+        case "enum-value":
+        case "stringifier":
+        case "serializer":
+        case "iterator":
+        case "maplike":
+        case "setlike":
+        case "state":
+        case "mode":
+        case "context":
+        case "facet": return true;
+
+        default: return false;
+    }
+}
+function refusesFor(type) {
+    switch(type) {
+        case "property":
+        case "element":
+        case "interface":
+        case "namespace":
+        case "callback":
+        case "dictionary":
+        case "enum":
+        case "exception":
+        case "typedef":
+        case "http-header":
+        case "permission": return true;
+
+        default: return false;
+    }
+}
+function linkFormatterFromType(type) {
+    switch(type) {
+        case 'scheme':
+        case 'permission':
+        case 'dfn': return (text) => `[=${text}=]`;
+
+        case 'abstract-op': return (text) => `[\$${text}\$]`;
+
+        case 'function':
+        case 'at-rule':
+        case 'selector':
+        case 'value': return (text) => `''${text}''`;
+
+        case 'http-header': return (text) => `[:${text}:]`;
+
+        case 'interface':
+        case 'constructor':
+        case 'method':
+        case 'argument':
+        case 'attribute':
+        case 'callback':
+        case 'dictionary':
+        case 'dict-member':
+        case 'enum':
+        case 'enum-value':
+        case 'exception':
+        case 'const':
+        case 'typedef':
+        case 'stringifier':
+        case 'serializer':
+        case 'iterator':
+        case 'maplike':
+        case 'setlike':
+        case 'extended-attribute':
+        case 'event':
+        case 'idl': return (text) => `{{${text}}}`;
+
+        case 'element-state':
+        case 'element-attr':
+        case 'attr-value':
+        case 'element': return (element) => `<{${element}}>`;
+
+        case 'grammar': return (text) => `${text} (within a <pre class=prod>)`;
+
+        case 'type': return (text)=> `<<${text}>>`;
+
+        case 'descriptor':
+        case 'property': return (text) => `'${text}'`;
+
+        default: return;
+    };
+};
+
+function genLinkingSyntaxes(dfn) {
+    if(dfn.tagName != "DFN") return;
+
+    const type = dfn.getAttribute('data-dfn-type');
+    if(!type) {
+        console.log(`<dfn> doesn't have a data-dfn-type:`, dfn);
+        return [];
+    }
+
+    // Return a function that wraps link text based on the type
+    const linkFormatter = linkFormatterFromType(type);
+    if(!linkFormatter) {
+        console.log(`<dfn> has an unknown data-dfn-type:`, dfn);
+        return [];
+    }
+
+    let ltAlts;
+    if(dfn.hasAttribute('data-lt')) {
+        ltAlts = dfn.getAttribute('data-lt')
+            .split("|")
+            .map(x=>x.trim());
+    } else {
+        ltAlts = [dfn.textContent.trim()];
+    }
+    if(type == "type") {
+        // lt of "<foo>", but "foo" is the interior;
+        // <<foo/bar>> is how you write it with a for,
+        // not <foo/<bar>> or whatever.
+        for(var i = 0; i < ltAlts.length; i++) {
+            const lt = ltAlts[i];
+            const match = /<(.*)>/.exec(lt);
+            if(match) { ltAlts[i] = match[1]; }
+        }
+    }
+
+    let forAlts;
+    if(dfn.hasAttribute('data-dfn-for')) {
+        forAlts = dfn.getAttribute('data-dfn-for')
+            .split(",")
+            .map(x=>x.trim());
+    } else {
+        forAlts = [''];
+    }
+
+    let linkingSyntaxes = [];
+    if(!needsFor(type)) {
+        for(const lt of ltAlts) {
+            linkingSyntaxes.push(linkFormatter(lt));
+        }
+    }
+    if(!refusesFor(type)) {
+        for(const f of forAlts) {
+            linkingSyntaxes.push(linkFormatter(`${f}/${ltAlts[0]}`))
+        }
+    }
+    return [
+        mk.b({}, 'Possible linking syntaxes:'),
+        mk.ul({},
+            ...linkingSyntaxes.map(link => {
+                const copyLink = async () =>
+                    await navigator.clipboard.writeText(link);
+                return mk.li({},
+                    mk.div({ class: 'link-item' },
+                        mk.button({
+                            class: 'copy-icon', title: 'Copy',
+                            type: 'button',
+                            _onclick: copyLink,
+                            tabindex: 0,
+                        }, mk.span({ class: 'icon' }) ),
+                        mk.span({}, link)
+                    )
+                );
+            })
+        )
+    ];
+}
+}
+</script>
+<script>/* Boilerplate: script-position-annos */
+"use strict";
+{
+function repositionAnnoPanels(){
+    const panels = [...document.querySelectorAll("[data-anno-for]")];
+    hydratePanels(panels);
+    let vSoFar = 0;
+    for(const panel of panels.sort(cmpTops)) {
+        if(panel.top < vSoFar) {
+            panel.top = vSoFar;
+            panel.style.top = vSoFar + "px";
+        }
+        vSoFar = panel.top + panel.height + 15;
+    }
+}
+function hydratePanels(panels) {
+    const main = document.querySelector("main");
+    let mainRect;
+    if(main) mainRect = main.getBoundingClientRect();
+    // First display them all, if they're not already visible.
+    for(const panel of panels) {
+        panel.classList.remove("unpositioned");
+    }
+    // Measure them all
+    for(const panel of panels) {
+        const dfn = document.getElementById(panel.getAttribute("data-anno-for"));
+        if(!dfn) {
+            console.log("Can't find the annotation panel target:", panel);
+            continue;
+        }
+        panel.dfn = dfn;
+        panel.top = window.scrollY + dfn.getBoundingClientRect().top;
+        let panelRect = panel.getBoundingClientRect();
+        panel.height = panelRect.height;
+        if(main) {
+            panel.overlappingMain = panelRect.left < mainRect.right;
+        } else {
+            panel.overlappingMain = false;
+        }
+    }
+    // And finally position them
+    for(const panel of panels) {
+        const dfn = panel.dfn;
+        if(!dfn) continue;
+        panel.style.top = panel.top + "px";
+        panel.classList.toggle("overlapping-main", panel.overlappingMain);
+    }
+}
+
+function cmpTops(a,b) {
+    return a.top - b.top;
+}
+
+window.addEventListener("load", repositionAnnoPanels);
+window.addEventListener("resize", repositionAnnoPanels);
+}
+</script>
+<script>/* Boilerplate: script-ref-hints */
+"use strict";
+{
+let refsData = {
+"#dom-performanceservertiming-description": {"displayText":"description","export":true,"for_":["PerformanceServerTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"description","type":"attribute","url":"#dom-performanceservertiming-description"},
+"#dom-performanceservertiming-duration": {"displayText":"duration","export":true,"for_":["PerformanceServerTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"duration","type":"attribute","url":"#dom-performanceservertiming-duration"},
+"#dom-performanceservertiming-name": {"displayText":"name","export":true,"for_":["PerformanceServerTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"name","type":"attribute","url":"#dom-performanceservertiming-name"},
+"#parse-a-server-timing-header-field": {"displayText":"parse a server-timing header field","export":true,"for_":[],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"parse a server-timing header field","type":"dfn","url":"#parse-a-server-timing-header-field"},
+"#performanceservertiming": {"displayText":"PerformanceServerTiming","export":true,"for_":[],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"PerformanceServerTiming","type":"interface","url":"#performanceservertiming"},
+"#performanceservertiming-metric-name": {"displayText":"metric name","export":true,"for_":["PerformanceServerTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"metric name","type":"dfn","url":"#performanceservertiming-metric-name"},
+"#performanceservertiming-params": {"displayText":"params","export":true,"for_":["PerformanceServerTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"params","type":"dfn","url":"#performanceservertiming-params"},
+"#server-timing-header-field": {"displayText":"server-timing header field","export":true,"for_":[],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"server-timing header field","type":"dfn","url":"#server-timing-header-field"},
+"https://fetch.spec.whatwg.org/#collect-an-http-quoted-string": {"displayText":"collecting an HTTP quoted string","export":true,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"collecting an http quoted string","type":"dfn","url":"https://fetch.spec.whatwg.org/#collect-an-http-quoted-string"},
+"https://fetch.spec.whatwg.org/#fetch-timing-info-server-timing-headers": {"displayText":"server-timing headers","export":true,"for_":["fetch timing info"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"server-timing headers","type":"dfn","url":"https://fetch.spec.whatwg.org/#fetch-timing-info-server-timing-headers"},
+"https://html.spec.whatwg.org/multipage/browsers.html#same-origin": {"displayText":"same origin","export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"same origin","type":"dfn","url":"https://html.spec.whatwg.org/multipage/browsers.html#same-origin"},
+"https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values": {"displayText":"rules for parsing floating-point number values","export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"rules for parsing floating-point number values","type":"dfn","url":"https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values"},
+"https://infra.spec.whatwg.org/#code-point": {"displayText":"code point","export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"code point","type":"dfn","url":"https://infra.spec.whatwg.org/#code-point"},
+"https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points": {"displayText":"collecting a sequence of code points","export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"collecting a sequence of code points","type":"dfn","url":"https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points"},
+"https://infra.spec.whatwg.org/#iteration-continue": {"displayText":"continue","export":true,"for_":["iteration"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"continue","type":"dfn","url":"https://infra.spec.whatwg.org/#iteration-continue"},
+"https://infra.spec.whatwg.org/#list": {"displayText":"list","export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"list","type":"dfn","url":"https://infra.spec.whatwg.org/#list"},
+"https://infra.spec.whatwg.org/#list-append": {"displayText":"append","export":true,"for_":["list"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"append","type":"dfn","url":"https://infra.spec.whatwg.org/#list-append"},
+"https://infra.spec.whatwg.org/#list-iterate": {"displayText":"iterate","export":true,"for_":["list","set"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"iterate","type":"dfn","url":"https://infra.spec.whatwg.org/#list-iterate"},
+"https://infra.spec.whatwg.org/#map-exists": {"displayText":"exist","export":true,"for_":["map"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"exist","type":"dfn","url":"https://infra.spec.whatwg.org/#map-exists"},
+"https://infra.spec.whatwg.org/#map-set": {"displayText":"set","export":true,"for_":["map"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"set","type":"dfn","url":"https://infra.spec.whatwg.org/#map-set"},
+"https://infra.spec.whatwg.org/#ordered-map": {"displayText":"ordered map","export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"ordered map","type":"dfn","url":"https://infra.spec.whatwg.org/#ordered-map"},
+"https://infra.spec.whatwg.org/#skip-ascii-whitespace": {"displayText":"skip ASCII whitespace","export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"skip ascii whitespace","type":"dfn","url":"https://infra.spec.whatwg.org/#skip-ascii-whitespace"},
+"https://infra.spec.whatwg.org/#string-position-variable": {"displayText":"position variable","export":true,"for_":["string"],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"position variable","type":"dfn","url":"https://infra.spec.whatwg.org/#string-position-variable"},
+"https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace": {"displayText":"strip leading and trailing ASCII whitespace","export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"strip leading and trailing ascii whitespace","type":"dfn","url":"https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace"},
+"https://w3c.github.io/hr-time/#dfn-duration": {"displayText":"duration","export":true,"for_":[],"level":"3","normative":true,"shortname":"hr-time","spec":"hr-time-3","status":"current","text":"duration","type":"dfn","url":"https://w3c.github.io/hr-time/#dfn-duration"},
+"https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp": {"displayText":"DOMHighResTimeStamp","export":true,"for_":[],"level":"3","normative":true,"shortname":"hr-time","spec":"hr-time-3","status":"current","text":"DOMHighResTimeStamp","type":"typedef","url":"https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp"},
+"https://w3c.github.io/resource-timing/#dfn-timing-info": {"displayText":"timing info","export":true,"for_":[],"level":"","normative":true,"shortname":"resource-timing","spec":"resource-timing","status":"anchor-block","text":"timing info","type":"dfn","url":"https://w3c.github.io/resource-timing/#dfn-timing-info"},
+"https://w3c.github.io/resource-timing/#performanceresourcetiming": {"displayText":"PerformanceResourceTiming","export":true,"for_":[],"level":"1","normative":true,"shortname":"resource-timing","spec":"resource-timing","status":"current","text":"PerformanceResourceTiming","type":"interface","url":"https://w3c.github.io/resource-timing/#performanceresourcetiming"},
+"https://webidl.spec.whatwg.org/#Default": {"displayText":"Default","export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"Default","type":"extended-attribute","url":"https://webidl.spec.whatwg.org/#Default"},
+"https://webidl.spec.whatwg.org/#Exposed": {"displayText":"Exposed","export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"Exposed","type":"extended-attribute","url":"https://webidl.spec.whatwg.org/#Exposed"},
+"https://webidl.spec.whatwg.org/#default-tojson-steps": {"displayText":"default toJSON steps","export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"default tojson steps","type":"dfn","url":"https://webidl.spec.whatwg.org/#default-tojson-steps"},
+"https://webidl.spec.whatwg.org/#idl-DOMString": {"displayText":"DOMString","export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"DOMString","type":"interface","url":"https://webidl.spec.whatwg.org/#idl-DOMString"},
+"https://webidl.spec.whatwg.org/#idl-frozen-array": {"displayText":"FrozenArray","export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"FrozenArray","type":"interface","url":"https://webidl.spec.whatwg.org/#idl-frozen-array"},
+"https://webidl.spec.whatwg.org/#idl-object": {"displayText":"object","export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"object","type":"interface","url":"https://webidl.spec.whatwg.org/#idl-object"},
+"https://webidl.spec.whatwg.org/#this": {"displayText":"this","export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"this","type":"dfn","url":"https://webidl.spec.whatwg.org/#this"},
+};
+
+function mkRefHint(link, ref) {
+    const linkText = link.textContent;
+    let dfnTextElements = '';
+    if (ref.displayText.toLowerCase() != linkText.toLowerCase()) {
+        // Give the original term if it's being displayed in a different way.
+        // But allow casing differences, they're insignificant.
+        dfnTextElements =
+            mk.li({},
+                mk.b({}, "Term: "),
+                mk.span({}, ref.displayText)
+            );
+    }
+    const forList = ref.for_;
+    let forListElements;
+    if(forList.length == 0) {
+        forListElements = [];
+    } else if(forList.length == 1) {
+        forListElements = mk.li({},
+            mk.b({}, "For: "),
+            mk.span({}, forList[0]),
+        );
+    } else {
+        forListElements = mk.li({},
+            mk.b({}, "For: "),
+            mk.ul({},
+                ...forList.map(forItem =>
+                    mk.li({},
+                        mk.span({}, forItem)
+                    ),
+                ),
+            ),
+        );
+    }
+    const url = ref.url;
+    const safeUrl = encodeURIComponent(url);
+    const hintPanel = mk.aside({
+        class: "ref-hint",
+        id: `ref-hint-for-${safeUrl}`,
+        "data-for": url,
+        "aria-labelled-by": `ref-hint-for-${safeUrl}`,
+    },
+        mk.ul({},
+            dfnTextElements,
+            mk.li({},
+                mk.b({}, "URL: "),
+                mk.a({ href: url, class: "ref" }, url),
+            ),
+            mk.li({},
+                mk.b({}, "Type: "),
+                mk.span({}, `${ref.type}`),
+            ),
+            mk.li({},
+                mk.b({}, "Spec: "),
+                mk.span({}, `${ref.spec ? ref.spec : ''}`),
+            ),
+            forListElements
+        ),
+    );
+    hintPanel.forLink = link;
+    setupRefHintEventListeners(link, hintPanel);
+    return hintPanel;
+}
+
+function hideAllRefHints() {
+    queryAll(".ref-hint").forEach(el=>hideRefHint(el));
+}
+
+function hideRefHint(refHint) {
+    const link = refHint.forLink;
+    link.setAttribute("aria-expanded", "false");
+    if(refHint.teardownEventListeners) {
+        refHint.teardownEventListeners();
+    }
+    refHint.remove();
+}
+
+function showRefHint(link) {
+    if(link.classList.contains("dfn-link")) return;
+    const url = link.getAttribute("href");
+    const refHintKey = link.getAttribute("data-refhint-key");
+    let key = url;
+    if(refHintKey) {
+        key = refHintKey + "_" + url;
+    }
+    const ref = refsData[key];
+    if(!ref) return;
+
+    hideAllRefHints(); // Only display one at this time.
+
+    const refHint = mkRefHint(link, ref);
+    append(document.body, refHint);
+    link.setAttribute("aria-expanded", "true");
+    positionRefHint(refHint);
+}
+
+function setupRefHintEventListeners(link, refHint) {
+    if (refHint.teardownEventListeners) return;
+    // Add event handlers to hide the refHint after the user moves away
+    // from both the link and refHint, if not hovering either within one second.
+    let timeout = null;
+    const startHidingRefHint = (event) => {
+        if (timeout) {
+            clearTimeout(timeout);
+        }
+        timeout = setTimeout(() => {
+            hideRefHint(refHint);
+        }, 1000);
+    }
+    const resetHidingRefHint = (event) => {
+        if (timeout) clearTimeout(timeout);
+        timeout = null;
+    };
+    link.addEventListener("mouseleave", startHidingRefHint);
+    link.addEventListener("mouseenter", resetHidingRefHint);
+    link.addEventListener("blur", startHidingRefHint);
+    link.addEventListener("focus", resetHidingRefHint);
+    refHint.addEventListener("mouseleave", startHidingRefHint);
+    refHint.addEventListener("mouseenter", resetHidingRefHint);
+    refHint.addEventListener("blur", startHidingRefHint);
+    refHint.addEventListener("focus", resetHidingRefHint);
+
+    refHint.teardownEventListeners = () => {
+        // remove event listeners
+        resetHidingRefHint();
+        link.removeEventListener("mouseleave", startHidingRefHint);
+        link.removeEventListener("mouseenter", resetHidingRefHint);
+        link.removeEventListener("blur", startHidingRefHint);
+        link.removeEventListener("focus", resetHidingRefHint);
+        refHint.removeEventListener("mouseleave", startHidingRefHint);
+        refHint.removeEventListener("mouseenter", resetHidingRefHint);
+        refHint.removeEventListener("blur", startHidingRefHint);
+        refHint.removeEventListener("focus", resetHidingRefHint);
+    };
+}
+
+function positionRefHint(refHint) {
+    const link = refHint.forLink;
+    const linkPos = getBounds(link);
+    refHint.style.top = linkPos.bottom + "px";
+    refHint.style.left = linkPos.left + "px";
+
+    const panelPos = refHint.getBoundingClientRect();
+    const panelMargin = 8;
+    const maxRight = document.body.parentNode.clientWidth - panelMargin;
+    if (panelPos.right > maxRight) {
+        const overflowAmount = panelPos.right - maxRight;
+        const newLeft = Math.max(panelMargin, linkPos.left - overflowAmount);
+        refHint.style.left = newLeft + "px";
+    }
+}
+
+// TODO: shared util
+// Returns the root-level absolute position {left and top} of element.
+function getBounds(el, relativeTo=document.body) {
+    const relativeRect = relativeTo.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const top = elRect.top - relativeRect.top;
+    const left = elRect.left - relativeRect.left;
+    return {
+        top,
+        left,
+        bottom: top + elRect.height,
+        right: left + elRect.width,
+    }
+}
+
+function showRefHintListener(e) {
+    // If the target isn't in a link (or is a link),
+    // just ignore it.
+    let link = e.target.closest("a");
+    if(!link) return;
+
+    // If the target is in a ref-hint panel
+    // (aka a link in the already-open one),
+    // also just ignore it.
+    if(link.closest(".ref-hint")) return;
+
+    // Otherwise, show the panel for the link.
+    showRefHint(link);
+}
+
+function hideAllHintsListener(e) {
+    // If the click is inside a ref-hint panel, ignore it.
+    if(e.target.closest(".ref-hint")) return;
+    // Otherwise, close all the current panels.
+    hideAllRefHints();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.body.addEventListener("mousedown", showRefHintListener);
+    document.body.addEventListener("focus", showRefHintListener);
+
+    document.body.addEventListener("click", hideAllHintsListener);
+});
+
+window.addEventListener("resize", () => {
+    // Hide any open ref hint.
+    hideAllRefHints();
+});
+}
+</script>
