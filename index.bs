@@ -162,10 +162,10 @@ interface PerformanceServerTiming {
 
 <p>When <dfn data-export data-dfn-for="PerformanceServerTiming">toJSON</dfn> is called, run [[!WEBIDL]]'s [=default toJSON steps=].</p>
 
-<h3 id="the-name-attribute"><dfn data-export data-dfn-for="PerformanceServerTiming">name</dfn> attribute</h3>
+<h3 id="the-name-attribute"><dfn attribute data-export data-dfn-for="PerformanceServerTiming">name</dfn> attribute</h3>
 <p>The {{PerformanceServerTiming/name}} getter steps are to return [=this=]'s [=PerformanceServerTiming/metric name=].</p>
 
-<h3 id="the-duration-attribute"><dfn data-export data-dfn-for="PerformanceServerTiming">duration</dfn> attribute</h3>
+<h3 id="the-duration-attribute"><dfn attribute data-export data-dfn-for="PerformanceServerTiming">duration</dfn> attribute</h3>
 <p>The {{PerformanceServerTiming/duration}} getter steps are to do the following:</p>
 
 <ol>
@@ -182,7 +182,7 @@ interface PerformanceServerTiming {
   of time, and having it represent a <a spec="hr-time">duration</a> in milliseconds is a recommendation.
 </p>
 
-<h3 id="the-description-attribute"><dfn data-export data-dfn-for="PerformanceServerTiming">description</dfn> attribute</h3>
+<h3 id="the-description-attribute"><dfn attribute data-export data-dfn-for="PerformanceServerTiming">description</dfn> attribute</h3>
 <p>The {{PerformanceServerTiming/description}} getter steps are to return [=this=]'s [=PerformanceServerTiming/params=][<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.</p>
 
 <p>A {{PerformanceServerTiming}} has an associated string <dfn data-dfn-for="PerformanceServerTiming">metric name</dfn>, initially set to the empty string.</p>
@@ -203,7 +203,7 @@ partial interface PerformanceResourceTiming {
 
 <h3 id="the-servertiming-attribute"><code>serverTiming</code> attribute</h3>
 
-<p>The <dfn data-export data-dfn-for="PerformanceResourceTiming">serverTiming</dfn> getter steps are the following:</p>
+<p>The <dfn attribute data-export data-dfn-for="PerformanceResourceTiming">serverTiming</dfn> getter steps are the following:</p>
 
 <ol>
   <li><p>Let |entries| be a new [=list=].</p></li>
