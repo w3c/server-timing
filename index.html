@@ -7,7 +7,7 @@
   <link href="https://www.w3.org/StyleSheets/TR/2021/W3C-ED" rel="stylesheet">
   <meta content="Bikeshed version 0ef803fdf, updated Tue Jan 6 11:59:39 2026 -0800" name="generator">
   <link href="https://www.w3.org/TR/server-timing/" rel="canonical">
-  <meta content="c9ecd67bec1f8fe2f68a74dc4ffd589c39e037bd" name="revision">
+  <meta content="71f078dabe1f6eb43e478e1ce2871b183fed7abe" name="revision">
   <meta content="dark light" name="color-scheme">
   <link href="https://www.w3.org/StyleSheets/TR/2021/dark.css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css">
 <style>
@@ -928,7 +928,7 @@ c-[il] { color: #000000 } /* Literal.Number.Integer.Long */
 </p>
    <h1 class="no-ref p-name" id="title">Server Timing</h1>
    <p id="w3c-state"><a href="https://www.w3.org/standards/types/#ED">Editor’s Draft</a>,
-    <time class="dt-updated" datetime="2026-03-09">9 March 2026</time></p>
+    <time class="dt-updated" datetime="2026-03-16">16 March 2026</time></p>
    <details open>
     <summary>More details about this document</summary>
     <div data-fill-with="spec-metadata">
@@ -985,9 +985,9 @@ c-[il] { color: #000000 } /* Literal.Number.Integer.Long */
     <li>
      <a href="#the-performanceservertiming-interface"><span class="secno">3</span> <span class="content">The <code class="idl"><span>PerformanceServerTiming</span></code> Interface</span></a>
      <ol class="toc">
-      <li><a href="#the-name-attribute"><span class="secno">3.1</span> <span class="content"><span>name</span> attribute</span></a>
-      <li><a href="#the-duration-attribute"><span class="secno">3.2</span> <span class="content"><span>duration</span> attribute</span></a>
-      <li><a href="#the-description-attribute"><span class="secno">3.3</span> <span class="content"><span>description</span> attribute</span></a>
+      <li><a href="#the-name-attribute"><span class="secno">3.1</span> <span class="content"><span><code>name</code></span> attribute</span></a>
+      <li><a href="#the-duration-attribute"><span class="secno">3.2</span> <span class="content"><span><code>duration</code></span> attribute</span></a>
+      <li><a href="#the-description-attribute"><span class="secno">3.3</span> <span class="content"><span><code>description</code></span> attribute</span></a>
       <li><a href="#extension-to-performanceresourcetiming"><span class="secno">3.4</span> <span class="content">Extension to the <code class="idl"><span>PerformanceResourceTiming</span></code> interface</span></a>
       <li><a href="#the-servertiming-attribute"><span class="secno">3.5</span> <span class="content"><code>serverTiming</code> attribute</span></a>
      </ol>
@@ -1122,17 +1122,17 @@ server-timing-param-value = token / quoted-string
    <h2 class="heading settled" data-level="3" id="the-performanceservertiming-interface"><span class="secno">3. </span><span class="content">The <code class="idl"><a data-link-type="idl" href="#performanceservertiming" id="ref-for-performanceservertiming②">PerformanceServerTiming</a></code> Interface</span><a class="self-link" href="#the-performanceservertiming-interface"></a></h2>
 <pre class="def highlight idl">[<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Exposed" id="ref-for-Exposed"><c- g>Exposed</c-></a>=(<c- n>Window</c->,<c- n>Worker</c->)]
 <c- b>interface</c-> <dfn class="dfn-paneled idl-code" data-dfn-type="interface" data-export id="performanceservertiming"><code><c- g>PerformanceServerTiming</c-></code></dfn> {
-  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString" id="ref-for-idl-DOMString"><c- b>DOMString</c-></a> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="attribute" data-export data-readonly data-type="DOMString" id="dom-performanceservertiming-name"><code><c- g>name</c-></code></dfn>;
-  <c- b>readonly</c-> <c- b>attribute</c-> <a data-link-type="idl-name" href="https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp" id="ref-for-typedefdef-domhighrestimestamp"><c- n>DOMHighResTimeStamp</c-></a> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="attribute" data-export data-readonly data-type="DOMHighResTimeStamp" id="dom-performanceservertiming-duration"><code><c- g>duration</c-></code></dfn>;
-  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString" id="ref-for-idl-DOMString①"><c- b>DOMString</c-></a> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="attribute" data-export data-readonly data-type="DOMString" id="dom-performanceservertiming-description"><code><c- g>description</c-></code></dfn>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString" id="ref-for-idl-DOMString"><c- b>DOMString</c-></a> <a class="idl-code" data-link-type="attribute" data-readonly data-type="DOMString" href="#dom-performanceservertiming-name" id="ref-for-dom-performanceservertiming-name"><c- g>name</c-></a>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a data-link-type="idl-name" href="https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp" id="ref-for-typedefdef-domhighrestimestamp"><c- n>DOMHighResTimeStamp</c-></a> <a class="idl-code" data-link-type="attribute" data-readonly data-type="DOMHighResTimeStamp" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration①"><c- g>duration</c-></a>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString" id="ref-for-idl-DOMString①"><c- b>DOMString</c-></a> <a class="idl-code" data-link-type="attribute" data-readonly data-type="DOMString" href="#dom-performanceservertiming-description" id="ref-for-dom-performanceservertiming-description①"><c- g>description</c-></a>;
   [<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Default" id="ref-for-Default"><c- g>Default</c-></a>] <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-object" id="ref-for-idl-object"><c- b>object</c-></a> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="method" data-export data-lt="toJSON()" id="dom-performanceservertiming-tojson"><code><c- g>toJSON</c-></code></dfn>();
 };
 </pre>
    <p>When <dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-export id="performanceservertiming-tojson">toJSON</dfn> is called, run <a data-link-type="biblio" href="#biblio-webidl" title="Web IDL Standard">[WEBIDL]</a>’s <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#default-tojson-steps" id="ref-for-default-tojson-steps">default toJSON steps</a>.</p>
-   <h3 class="heading settled" data-level="3.1" id="the-name-attribute"><span class="secno">3.1. </span><span class="content"><dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-export id="performanceservertiming-name">name</dfn> attribute</span><a class="self-link" href="#the-name-attribute"></a></h3>
-   <p>The <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-name" id="ref-for-dom-performanceservertiming-name">name</a></code> getter steps are to return <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this">this</a>’s <a data-link-type="dfn" href="#performanceservertiming-metric-name" id="ref-for-performanceservertiming-metric-name①">metric name</a>.</p>
-   <h3 class="heading settled" data-level="3.2" id="the-duration-attribute"><span class="secno">3.2. </span><span class="content"><dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-export id="performanceservertiming-duration">duration</dfn> attribute</span><a class="self-link" href="#the-duration-attribute"></a></h3>
-   <p>The <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration①">duration</a></code> getter steps are to do the following:</p>
+   <h3 class="heading settled" data-level="3.1" id="the-name-attribute"><span class="secno">3.1. </span><span class="content"><dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="attribute" data-export id="dom-performanceservertiming-name"><code>name</code></dfn> attribute</span><a class="self-link" href="#the-name-attribute"></a></h3>
+   <p>The <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-name" id="ref-for-dom-performanceservertiming-name①">name</a></code> getter steps are to return <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this">this</a>’s <a data-link-type="dfn" href="#performanceservertiming-metric-name" id="ref-for-performanceservertiming-metric-name①">metric name</a>.</p>
+   <h3 class="heading settled" data-level="3.2" id="the-duration-attribute"><span class="secno">3.2. </span><span class="content"><dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="attribute" data-export id="dom-performanceservertiming-duration"><code>duration</code></dfn> attribute</span><a class="self-link" href="#the-duration-attribute"></a></h3>
+   <p>The <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration②">duration</a></code> getter steps are to do the following:</p>
    <ol>
     <li>
      <p>If <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this①">this</a>’s <a data-link-type="dfn" href="#performanceservertiming-params" id="ref-for-performanceservertiming-params①">params</a>[<code>"dur"</code>] does not <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists①">exist</a>, return 0.</p>
@@ -1142,23 +1142,23 @@ server-timing-param-value = token / quoted-string
      <p>If <var>dur</var> is an error, return 0; Otherwise return <var>dur</var>.</p>
    </ol>
    <p class="note" role="note">
-  Since <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration②">duration</a></code> is a <code class="idl"><a data-link-type="idl" href="https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp" id="ref-for-typedefdef-domhighrestimestamp①">DOMHighResTimeStamp</a></code>, it usually represents a <a data-link-type="dfn" href="https://w3c.github.io/hr-time/#dfn-duration" id="ref-for-dfn-duration">duration</a> in
-  milliseconds. Since this is not enforceable in practice, <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration③">duration</a></code> can represent any unit
+  Since <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration③">duration</a></code> is a <code class="idl"><a data-link-type="idl" href="https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp" id="ref-for-typedefdef-domhighrestimestamp①">DOMHighResTimeStamp</a></code>, it usually represents a <a data-link-type="dfn" href="https://w3c.github.io/hr-time/#dfn-duration" id="ref-for-dfn-duration">duration</a> in
+  milliseconds. Since this is not enforceable in practice, <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-duration" id="ref-for-dom-performanceservertiming-duration④">duration</a></code> can represent any unit
   of time, and having it represent a <a data-link-type="dfn" href="https://w3c.github.io/hr-time/#dfn-duration" id="ref-for-dfn-duration①">duration</a> in milliseconds is a recommendation.
 </p>
-   <h3 class="heading settled" data-level="3.3" id="the-description-attribute"><span class="secno">3.3. </span><span class="content"><dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-export id="performanceservertiming-description">description</dfn> attribute</span><a class="self-link" href="#the-description-attribute"></a></h3>
-   <p>The <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-description" id="ref-for-dom-performanceservertiming-description①">description</a></code> getter steps are to return <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this③">this</a>’s <a data-link-type="dfn" href="#performanceservertiming-params" id="ref-for-performanceservertiming-params③">params</a>[<code>"desc"</code>] if it <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists②">exists</a>, otherwise the empty string.</p>
+   <h3 class="heading settled" data-level="3.3" id="the-description-attribute"><span class="secno">3.3. </span><span class="content"><dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceServerTiming" data-dfn-type="attribute" data-export id="dom-performanceservertiming-description"><code>description</code></dfn> attribute</span><a class="self-link" href="#the-description-attribute"></a></h3>
+   <p>The <code class="idl"><a data-link-type="idl" href="#dom-performanceservertiming-description" id="ref-for-dom-performanceservertiming-description②">description</a></code> getter steps are to return <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this③">this</a>’s <a data-link-type="dfn" href="#performanceservertiming-params" id="ref-for-performanceservertiming-params③">params</a>[<code>"desc"</code>] if it <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists②">exists</a>, otherwise the empty string.</p>
    <p>A <code class="idl"><a data-link-type="idl" href="#performanceservertiming" id="ref-for-performanceservertiming③">PerformanceServerTiming</a></code> has an associated string <dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-noexport id="performanceservertiming-metric-name">metric name</dfn>, initially set to the empty string.</p>
    <p>A <code class="idl"><a data-link-type="idl" href="#performanceservertiming" id="ref-for-performanceservertiming④">PerformanceServerTiming</a></code> has an associated <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#ordered-map" id="ref-for-ordered-map①">ordered map</a> <dfn class="dfn-paneled" data-dfn-for="PerformanceServerTiming" data-dfn-type="dfn" data-noexport id="performanceservertiming-params">params</dfn>, initially empty.</p>
    <h3 class="heading settled" data-level="3.4" id="extension-to-performanceresourcetiming"><span class="secno">3.4. </span><span class="content">Extension to the <code class="idl"><a data-link-type="idl" href="https://w3c.github.io/resource-timing/#performanceresourcetiming" id="ref-for-performanceresourcetiming">PerformanceResourceTiming</a></code> interface</span><a class="self-link" href="#extension-to-performanceresourcetiming"></a></h3>
    <p>The <code class="idl"><a data-link-type="idl" href="https://w3c.github.io/resource-timing/#performanceresourcetiming" id="ref-for-performanceresourcetiming①">PerformanceResourceTiming</a></code> interface, which this specification partially extends, is defined in <a data-link-type="biblio" href="#biblio-resource-timing" title="Resource Timing">[RESOURCE-TIMING]</a>.</p>
 <pre class="def highlight idl">[<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Exposed" id="ref-for-Exposed①"><c- g>Exposed</c-></a>=(<c- n>Window</c->,<c- n>Worker</c->)]
 <c- b>partial</c-> <c- b>interface</c-> <a class="idl-code" data-link-type="interface" href="https://w3c.github.io/resource-timing/#performanceresourcetiming" id="ref-for-performanceresourcetiming②"><c- g>PerformanceResourceTiming</c-></a> {
-  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-frozen-array" id="ref-for-idl-frozen-array"><c- b>FrozenArray</c-></a>&lt;<a data-link-type="idl-name" href="#performanceservertiming" id="ref-for-performanceservertiming⑤"><c- n>PerformanceServerTiming</c-></a>> <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceResourceTiming" data-dfn-type="attribute" data-export data-readonly data-type="FrozenArray<PerformanceServerTiming>" id="dom-performanceresourcetiming-servertiming"><code><c- g>serverTiming</c-></code></dfn>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-frozen-array" id="ref-for-idl-frozen-array"><c- b>FrozenArray</c-></a>&lt;<a data-link-type="idl-name" href="#performanceservertiming" id="ref-for-performanceservertiming⑤"><c- n>PerformanceServerTiming</c-></a>> <a class="idl-code" data-link-type="attribute" data-readonly data-type="FrozenArray<PerformanceServerTiming>" href="#dom-performanceresourcetiming-servertiming" id="ref-for-dom-performanceresourcetiming-servertiming"><c- g>serverTiming</c-></a>;
 };
 </pre>
    <h3 class="heading settled" data-level="3.5" id="the-servertiming-attribute"><span class="secno">3.5. </span><span class="content"><code>serverTiming</code> attribute</span><a class="self-link" href="#the-servertiming-attribute"></a></h3>
-   <p>The <dfn class="dfn-paneled" data-dfn-for="PerformanceResourceTiming" data-dfn-type="dfn" data-export id="performanceresourcetiming-servertiming">serverTiming</dfn> getter steps are the following:</p>
+   <p>The <dfn class="dfn-paneled idl-code" data-dfn-for="PerformanceResourceTiming" data-dfn-type="attribute" data-export id="dom-performanceresourcetiming-servertiming"><code>serverTiming</code></dfn> getter steps are the following:</p>
    <ol>
     <li>
      <p>Let <var>entries</var> be a new <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list">list</a>.</p>
@@ -1360,34 +1360,14 @@ server-timing-param-value = token / quoted-string
   <h2 class="heading no-num no-ref settled" id="index"><span class="content">Index</span><a class="self-link" href="#index"></a></h2>
   <h3 class="heading no-num no-ref settled" id="index-defined-here"><span class="content">Terms defined by this specification</span><a class="self-link" href="#index-defined-here"></a></h3>
   <ul class="index">
-   <li>
-    description
-    <ul>
-     <li><a href="#dom-performanceservertiming-description">attribute for PerformanceServerTiming</a><span>, in § 3</span>
-     <li><a href="#performanceservertiming-description">dfn for PerformanceServerTiming</a><span>, in § 3.3</span>
-    </ul>
-   <li>
-    duration
-    <ul>
-     <li><a href="#dom-performanceservertiming-duration">attribute for PerformanceServerTiming</a><span>, in § 3</span>
-     <li><a href="#performanceservertiming-duration">dfn for PerformanceServerTiming</a><span>, in § 3.2</span>
-    </ul>
+   <li><a href="#dom-performanceservertiming-description">description</a><span>, in § 3.3</span>
+   <li><a href="#dom-performanceservertiming-duration">duration</a><span>, in § 3.2</span>
    <li><a href="#performanceservertiming-metric-name">metric name</a><span>, in § 3.3</span>
-   <li>
-    name
-    <ul>
-     <li><a href="#dom-performanceservertiming-name">attribute for PerformanceServerTiming</a><span>, in § 3</span>
-     <li><a href="#performanceservertiming-name">dfn for PerformanceServerTiming</a><span>, in § 3.1</span>
-    </ul>
+   <li><a href="#dom-performanceservertiming-name">name</a><span>, in § 3.1</span>
    <li><a href="#performanceservertiming-params">params</a><span>, in § 3.3</span>
    <li><a href="#parse-a-server-timing-header-field">parse a server-timing header field</a><span>, in § 2</span>
    <li><a href="#performanceservertiming">PerformanceServerTiming</a><span>, in § 3</span>
-   <li>
-    serverTiming
-    <ul>
-     <li><a href="#dom-performanceresourcetiming-servertiming">attribute for PerformanceResourceTiming</a><span>, in § 3.4</span>
-     <li><a href="#performanceresourcetiming-servertiming">dfn for PerformanceResourceTiming</a><span>, in § 3.5</span>
-    </ul>
+   <li><a href="#dom-performanceresourcetiming-servertiming">serverTiming</a><span>, in § 3.5</span>
    <li><a href="#server-timing-header-field">Server-Timing header field</a><span>, in § 2</span>
    <li><a href="#performanceservertiming-tojson">toJSON</a><span>, in § 3</span>
    <li><a href="#dom-performanceservertiming-tojson">toJSON()</a><span>, in § 3</span>
@@ -1483,15 +1463,15 @@ server-timing-param-value = token / quoted-string
   <h2 class="heading no-num no-ref settled" id="idl-index"><span class="content">IDL Index</span><a class="self-link" href="#idl-index"></a></h2>
 <pre class="def highlight idl">[<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Exposed"><c- g>Exposed</c-></a>=(<c- n>Window</c->,<c- n>Worker</c->)]
 <c- b>interface</c-> <a href="#performanceservertiming"><code><c- g>PerformanceServerTiming</c-></code></a> {
-  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString"><c- b>DOMString</c-></a> <a data-readonly data-type="DOMString" href="#dom-performanceservertiming-name"><code><c- g>name</c-></code></a>;
-  <c- b>readonly</c-> <c- b>attribute</c-> <a data-link-type="idl-name" href="https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp"><c- n>DOMHighResTimeStamp</c-></a> <a data-readonly data-type="DOMHighResTimeStamp" href="#dom-performanceservertiming-duration"><code><c- g>duration</c-></code></a>;
-  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString"><c- b>DOMString</c-></a> <a data-readonly data-type="DOMString" href="#dom-performanceservertiming-description"><code><c- g>description</c-></code></a>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString"><c- b>DOMString</c-></a> <a class="idl-code" data-link-type="attribute" data-readonly data-type="DOMString" href="#dom-performanceservertiming-name"><c- g>name</c-></a>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a data-link-type="idl-name" href="https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp"><c- n>DOMHighResTimeStamp</c-></a> <a class="idl-code" data-link-type="attribute" data-readonly data-type="DOMHighResTimeStamp" href="#dom-performanceservertiming-duration"><c- g>duration</c-></a>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-DOMString"><c- b>DOMString</c-></a> <a class="idl-code" data-link-type="attribute" data-readonly data-type="DOMString" href="#dom-performanceservertiming-description"><c- g>description</c-></a>;
   [<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Default"><c- g>Default</c-></a>] <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-object"><c- b>object</c-></a> <a href="#dom-performanceservertiming-tojson"><code><c- g>toJSON</c-></code></a>();
 };
 
 [<a class="idl-code" data-link-type="extended-attribute" href="https://webidl.spec.whatwg.org/#Exposed"><c- g>Exposed</c-></a>=(<c- n>Window</c->,<c- n>Worker</c->)]
 <c- b>partial</c-> <c- b>interface</c-> <a class="idl-code" data-link-type="interface" href="https://w3c.github.io/resource-timing/#performanceresourcetiming"><c- g>PerformanceResourceTiming</c-></a> {
-  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-frozen-array"><c- b>FrozenArray</c-></a>&lt;<a data-link-type="idl-name" href="#performanceservertiming"><c- n>PerformanceServerTiming</c-></a>> <a data-readonly data-type="FrozenArray<PerformanceServerTiming>" href="#dom-performanceresourcetiming-servertiming"><code><c- g>serverTiming</c-></code></a>;
+  <c- b>readonly</c-> <c- b>attribute</c-> <a class="idl-code" data-link-type="interface" href="https://webidl.spec.whatwg.org/#idl-frozen-array"><c- b>FrozenArray</c-></a>&lt;<a data-link-type="idl-name" href="#performanceservertiming"><c- n>PerformanceServerTiming</c-></a>> <a class="idl-code" data-link-type="attribute" data-readonly data-type="FrozenArray<PerformanceServerTiming>" href="#dom-performanceresourcetiming-servertiming"><c- g>serverTiming</c-></a>;
 };
 
 </pre>
@@ -1828,10 +1808,10 @@ let dfnPanelData = {
 "d24334b4": {"dfnID":"d24334b4","dfnText":"collect a sequence of code points","external":true,"refSections":[{"refs":[{"id":"ref-for-collect-a-sequence-of-code-points"},{"id":"ref-for-collect-a-sequence-of-code-points\u2460"},{"id":"ref-for-collect-a-sequence-of-code-points\u2461"},{"id":"ref-for-collect-a-sequence-of-code-points\u2462"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points"},
 "dc7feabb": {"dfnID":"dc7feabb","dfnText":"default toJSON steps","external":true,"refSections":[{"refs":[{"id":"ref-for-default-tojson-steps"}],"title":"3. The PerformanceServerTiming Interface"}],"url":"https://webidl.spec.whatwg.org/#default-tojson-steps"},
 "dcf5fafa": {"dfnID":"dcf5fafa","dfnText":"FrozenArray","external":true,"refSections":[{"refs":[{"id":"ref-for-idl-frozen-array"}],"title":"3.4. Extension to the PerformanceResourceTiming interface"}],"url":"https://webidl.spec.whatwg.org/#idl-frozen-array"},
-"dom-performanceresourcetiming-servertiming": {"dfnID":"dom-performanceresourcetiming-servertiming","dfnText":"serverTiming","external":false,"refSections":[],"url":"#dom-performanceresourcetiming-servertiming"},
-"dom-performanceservertiming-description": {"dfnID":"dom-performanceservertiming-description","dfnText":"description","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceservertiming-description"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-dom-performanceservertiming-description\u2460"}],"title":"3.3. description attribute"}],"url":"#dom-performanceservertiming-description"},
-"dom-performanceservertiming-duration": {"dfnID":"dom-performanceservertiming-duration","dfnText":"duration","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceservertiming-duration"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-dom-performanceservertiming-duration\u2460"},{"id":"ref-for-dom-performanceservertiming-duration\u2461"},{"id":"ref-for-dom-performanceservertiming-duration\u2462"}],"title":"3.2. duration attribute"}],"url":"#dom-performanceservertiming-duration"},
-"dom-performanceservertiming-name": {"dfnID":"dom-performanceservertiming-name","dfnText":"name","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceservertiming-name"}],"title":"3.1. name attribute"}],"url":"#dom-performanceservertiming-name"},
+"dom-performanceresourcetiming-servertiming": {"dfnID":"dom-performanceresourcetiming-servertiming","dfnText":"serverTiming","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceresourcetiming-servertiming"}],"title":"3.4. Extension to the PerformanceResourceTiming interface"}],"url":"#dom-performanceresourcetiming-servertiming"},
+"dom-performanceservertiming-description": {"dfnID":"dom-performanceservertiming-description","dfnText":"description","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceservertiming-description"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-dom-performanceservertiming-description\u2460"}],"title":"3. The PerformanceServerTiming Interface"},{"refs":[{"id":"ref-for-dom-performanceservertiming-description\u2461"}],"title":"3.3. description attribute"}],"url":"#dom-performanceservertiming-description"},
+"dom-performanceservertiming-duration": {"dfnID":"dom-performanceservertiming-duration","dfnText":"duration","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceservertiming-duration"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-dom-performanceservertiming-duration\u2460"}],"title":"3. The PerformanceServerTiming Interface"},{"refs":[{"id":"ref-for-dom-performanceservertiming-duration\u2461"},{"id":"ref-for-dom-performanceservertiming-duration\u2462"},{"id":"ref-for-dom-performanceservertiming-duration\u2463"}],"title":"3.2. duration attribute"}],"url":"#dom-performanceservertiming-duration"},
+"dom-performanceservertiming-name": {"dfnID":"dom-performanceservertiming-name","dfnText":"name","external":false,"refSections":[{"refs":[{"id":"ref-for-dom-performanceservertiming-name"}],"title":"3. The PerformanceServerTiming Interface"},{"refs":[{"id":"ref-for-dom-performanceservertiming-name\u2460"}],"title":"3.1. name attribute"}],"url":"#dom-performanceservertiming-name"},
 "dom-performanceservertiming-tojson": {"dfnID":"dom-performanceservertiming-tojson","dfnText":"toJSON","external":false,"refSections":[],"url":"#dom-performanceservertiming-tojson"},
 "efd1ec5d": {"dfnID":"efd1ec5d","dfnText":"object","external":true,"refSections":[{"refs":[{"id":"ref-for-idl-object"}],"title":"3. The PerformanceServerTiming Interface"}],"url":"https://webidl.spec.whatwg.org/#idl-object"},
 "f02cd417": {"dfnID":"f02cd417","dfnText":"iterate","external":true,"refSections":[{"refs":[{"id":"ref-for-list-iterate"}],"title":"3.5. serverTiming attribute"}],"url":"https://infra.spec.whatwg.org/#list-iterate"},
@@ -1840,12 +1820,8 @@ let dfnPanelData = {
 "f5468b1c": {"dfnID":"f5468b1c","dfnText":"rules for parsing floating-point number values","external":true,"refSections":[{"refs":[{"id":"ref-for-rules-for-parsing-floating-point-number-values"}],"title":"3.2. duration attribute"}],"url":"https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values"},
 "f937b7b6": {"dfnID":"f937b7b6","dfnText":"continue","external":true,"refSections":[{"refs":[{"id":"ref-for-iteration-continue"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#iteration-continue"},
 "parse-a-server-timing-header-field": {"dfnID":"parse-a-server-timing-header-field","dfnText":"parse a server-timing header field","external":false,"refSections":[{"refs":[{"id":"ref-for-parse-a-server-timing-header-field"}],"title":"3.5. serverTiming attribute"}],"url":"#parse-a-server-timing-header-field"},
-"performanceresourcetiming-servertiming": {"dfnID":"performanceresourcetiming-servertiming","dfnText":"serverTiming","external":false,"refSections":[],"url":"#performanceresourcetiming-servertiming"},
 "performanceservertiming": {"dfnID":"performanceservertiming","dfnText":"PerformanceServerTiming","external":false,"refSections":[{"refs":[{"id":"ref-for-performanceservertiming"}],"title":"1. Introduction"},{"refs":[{"id":"ref-for-performanceservertiming\u2460"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-performanceservertiming\u2461"}],"title":"3. The PerformanceServerTiming Interface"},{"refs":[{"id":"ref-for-performanceservertiming\u2462"},{"id":"ref-for-performanceservertiming\u2463"}],"title":"3.3. description attribute"},{"refs":[{"id":"ref-for-performanceservertiming\u2464"}],"title":"3.4. Extension to the PerformanceResourceTiming interface"}],"url":"#performanceservertiming"},
-"performanceservertiming-description": {"dfnID":"performanceservertiming-description","dfnText":"description","external":false,"refSections":[],"url":"#performanceservertiming-description"},
-"performanceservertiming-duration": {"dfnID":"performanceservertiming-duration","dfnText":"duration","external":false,"refSections":[],"url":"#performanceservertiming-duration"},
 "performanceservertiming-metric-name": {"dfnID":"performanceservertiming-metric-name","dfnText":"metric name","external":false,"refSections":[{"refs":[{"id":"ref-for-performanceservertiming-metric-name"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-performanceservertiming-metric-name\u2460"}],"title":"3.1. name attribute"}],"url":"#performanceservertiming-metric-name"},
-"performanceservertiming-name": {"dfnID":"performanceservertiming-name","dfnText":"name","external":false,"refSections":[],"url":"#performanceservertiming-name"},
 "performanceservertiming-params": {"dfnID":"performanceservertiming-params","dfnText":"params","external":false,"refSections":[{"refs":[{"id":"ref-for-performanceservertiming-params"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-performanceservertiming-params\u2460"},{"id":"ref-for-performanceservertiming-params\u2461"}],"title":"3.2. duration attribute"},{"refs":[{"id":"ref-for-performanceservertiming-params\u2462"}],"title":"3.3. description attribute"}],"url":"#performanceservertiming-params"},
 "performanceservertiming-tojson": {"dfnID":"performanceservertiming-tojson","dfnText":"toJSON","external":false,"refSections":[],"url":"#performanceservertiming-tojson"},
 "server-timing-header-field": {"dfnID":"server-timing-header-field","dfnText":"Server-Timing header field","external":false,"refSections":[{"refs":[{"id":"ref-for-server-timing-header-field"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-server-timing-header-field\u2460"}],"title":"5.1. Server-Timing Header Field"}],"url":"#server-timing-header-field"},
@@ -2294,6 +2270,7 @@ window.addEventListener("resize", repositionAnnoPanels);
 "use strict";
 {
 let refsData = {
+"#dom-performanceresourcetiming-servertiming": {"displayText":"serverTiming","export":true,"for_":["PerformanceResourceTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"serverTiming","type":"attribute","url":"#dom-performanceresourcetiming-servertiming"},
 "#dom-performanceservertiming-description": {"displayText":"description","export":true,"for_":["PerformanceServerTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"description","type":"attribute","url":"#dom-performanceservertiming-description"},
 "#dom-performanceservertiming-duration": {"displayText":"duration","export":true,"for_":["PerformanceServerTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"duration","type":"attribute","url":"#dom-performanceservertiming-duration"},
 "#dom-performanceservertiming-name": {"displayText":"name","export":true,"for_":["PerformanceServerTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"name","type":"attribute","url":"#dom-performanceservertiming-name"},
