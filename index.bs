@@ -26,8 +26,8 @@ spec:infra; type:dfn; text:list
 </pre>
 
 <pre class=anchors>
-urlPrefix: https://w3c.github.io/resource-timing/; spec: RESOURCE-TIMING; type: dfn
-    text: timing info; url: #dfn-timing-info
+urlPrefix: https://fetch.spec.whatwg.org/; spec: FETCH; type: dfn
+    text: timing info; url: #fetch-timing-info
 </pre>
 
 <style>
