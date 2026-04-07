@@ -7,7 +7,7 @@
   <link href="https://www.w3.org/StyleSheets/TR/2021/W3C-ED" rel="stylesheet">
   <meta content="Bikeshed version 0ef803fdf, updated Tue Jan 6 11:59:39 2026 -0800" name="generator">
   <link href="https://www.w3.org/TR/server-timing/" rel="canonical">
-  <meta content="71f078dabe1f6eb43e478e1ce2871b183fed7abe" name="revision">
+  <meta content="573ee35b45bd26d4a88747b97b0db9f6d9963038" name="revision">
   <meta content="dark light" name="color-scheme">
   <link href="https://www.w3.org/StyleSheets/TR/2021/dark.css" media="(prefers-color-scheme: dark)" rel="stylesheet" type="text/css">
 <style>
@@ -928,7 +928,7 @@ c-[il] { color: #000000 } /* Literal.Number.Integer.Long */
 </p>
    <h1 class="no-ref p-name" id="title">Server Timing</h1>
    <p id="w3c-state"><a href="https://www.w3.org/standards/types/#ED">Editor’s Draft</a>,
-    <time class="dt-updated" datetime="2026-03-16">16 March 2026</time></p>
+    <time class="dt-updated" datetime="2026-04-07">7 April 2026</time></p>
    <details open>
     <summary>More details about this document</summary>
     <div data-fill-with="spec-metadata">
@@ -1163,7 +1163,7 @@ server-timing-param-value = token / quoted-string
     <li>
      <p>Let <var>entries</var> be a new <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list" id="ref-for-list">list</a>.</p>
     <li>
-     <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-iterate" id="ref-for-list-iterate">For each</a> <var>field</var> in <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this④">this</a>’s <a data-link-type="dfn" href="https://w3c.github.io/resource-timing/#dfn-timing-info" id="ref-for-dfn-timing-info">timing info</a>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#fetch-timing-info-server-timing-headers" id="ref-for-fetch-timing-info-server-timing-headers">server-timing headers</a>:</p>
+     <p><a data-link-type="dfn" href="https://infra.spec.whatwg.org/#list-iterate" id="ref-for-list-iterate">For each</a> <var>field</var> in <a data-link-type="dfn" href="https://webidl.spec.whatwg.org/#this" id="ref-for-this④">this</a>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#fetch-timing-info" id="ref-for-fetch-timing-info">timing info</a>’s <a data-link-type="dfn" href="https://fetch.spec.whatwg.org/#fetch-timing-info-server-timing-headers" id="ref-for-fetch-timing-info-server-timing-headers">server-timing headers</a>:</p>
      <ol>
       <li>
        <p>Let <var>metric</var> be the result of <a data-link-type="dfn" href="#parse-a-server-timing-header-field" id="ref-for-parse-a-server-timing-header-field">parsing</a> <var>field</var>.</p>
@@ -1379,6 +1379,7 @@ server-timing-param-value = token / quoted-string
     <ul>
      <li><span class="dfn-paneled" id="4456bfd9">collecting an HTTP quoted string</span>
      <li><span class="dfn-paneled" id="8ced174c">server-timing headers</span>
+     <li><span class="dfn-paneled" id="9a41d60a">timing info</span>
     </ul>
    <li>
     <a data-link-type="biblio">[HR-TIME-3]</a> defines the following terms:
@@ -1413,7 +1414,6 @@ server-timing-param-value = token / quoted-string
     <a data-link-type="biblio">[RESOURCE-TIMING]</a> defines the following terms:
     <ul>
      <li><span class="dfn-paneled" id="f17ac856">PerformanceResourceTiming</span>
-     <li><span class="dfn-paneled" id="438f6d23">timing info</span>
     </ul>
    <li>
     <a data-link-type="biblio">[WEBIDL]</a> defines the following terms:
@@ -1790,7 +1790,6 @@ let dfnPanelData = {
 "0e6b2056": {"dfnID":"0e6b2056","dfnText":"set","external":true,"refSections":[{"refs":[{"id":"ref-for-map-set"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#map-set"},
 "1243a891": {"dfnID":"1243a891","dfnText":"exist","external":true,"refSections":[{"refs":[{"id":"ref-for-map-exists"}],"title":"2. The Server-Timing Header Field"},{"refs":[{"id":"ref-for-map-exists\u2460"}],"title":"3.2. duration attribute"},{"refs":[{"id":"ref-for-map-exists\u2461"}],"title":"3.3. description attribute"}],"url":"https://infra.spec.whatwg.org/#map-exists"},
 "4013a022": {"dfnID":"4013a022","dfnText":"this","external":true,"refSections":[{"refs":[{"id":"ref-for-this"}],"title":"3.1. name attribute"},{"refs":[{"id":"ref-for-this\u2460"},{"id":"ref-for-this\u2461"}],"title":"3.2. duration attribute"},{"refs":[{"id":"ref-for-this\u2462"}],"title":"3.3. description attribute"},{"refs":[{"id":"ref-for-this\u2463"}],"title":"3.5. serverTiming attribute"}],"url":"https://webidl.spec.whatwg.org/#this"},
-"438f6d23": {"dfnID":"438f6d23","dfnText":"timing info","external":true,"refSections":[{"refs":[{"id":"ref-for-dfn-timing-info"}],"title":"3.5. serverTiming attribute"}],"url":"https://w3c.github.io/resource-timing/#dfn-timing-info"},
 "4456bfd9": {"dfnID":"4456bfd9","dfnText":"collecting an HTTP quoted string","external":true,"refSections":[{"refs":[{"id":"ref-for-collect-an-http-quoted-string"}],"title":"2. The Server-Timing Header Field"}],"url":"https://fetch.spec.whatwg.org/#collect-an-http-quoted-string"},
 "4b2c8c72": {"dfnID":"4b2c8c72","dfnText":"duration","external":true,"refSections":[{"refs":[{"id":"ref-for-dfn-duration"},{"id":"ref-for-dfn-duration\u2460"}],"title":"3.2. duration attribute"}],"url":"https://w3c.github.io/hr-time/#dfn-duration"},
 "50c91fa5": {"dfnID":"50c91fa5","dfnText":"skip ASCII whitespace","external":true,"refSections":[{"refs":[{"id":"ref-for-skip-ascii-whitespace"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#skip-ascii-whitespace"},
@@ -1804,6 +1803,7 @@ let dfnPanelData = {
 "889e932f": {"dfnID":"889e932f","dfnText":"Exposed","external":true,"refSections":[{"refs":[{"id":"ref-for-Exposed"}],"title":"3. The PerformanceServerTiming Interface"},{"refs":[{"id":"ref-for-Exposed\u2460"}],"title":"3.4. Extension to the PerformanceResourceTiming interface"}],"url":"https://webidl.spec.whatwg.org/#Exposed"},
 "8ced174c": {"dfnID":"8ced174c","dfnText":"server-timing headers","external":true,"refSections":[{"refs":[{"id":"ref-for-fetch-timing-info-server-timing-headers"}],"title":"3.5. serverTiming attribute"}],"url":"https://fetch.spec.whatwg.org/#fetch-timing-info-server-timing-headers"},
 "915aff5e": {"dfnID":"915aff5e","dfnText":"code point","external":true,"refSections":[{"refs":[{"id":"ref-for-code-point"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#code-point"},
+"9a41d60a": {"dfnID":"9a41d60a","dfnText":"timing info","external":true,"refSections":[{"refs":[{"id":"ref-for-fetch-timing-info"}],"title":"3.5. serverTiming attribute"}],"url":"https://fetch.spec.whatwg.org/#fetch-timing-info"},
 "a37f05fd": {"dfnID":"a37f05fd","dfnText":"strip leading and trailing ASCII whitespace","external":true,"refSections":[{"refs":[{"id":"ref-for-strip-leading-and-trailing-ascii-whitespace"},{"id":"ref-for-strip-leading-and-trailing-ascii-whitespace\u2460"},{"id":"ref-for-strip-leading-and-trailing-ascii-whitespace\u2461"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace"},
 "d24334b4": {"dfnID":"d24334b4","dfnText":"collect a sequence of code points","external":true,"refSections":[{"refs":[{"id":"ref-for-collect-a-sequence-of-code-points"},{"id":"ref-for-collect-a-sequence-of-code-points\u2460"},{"id":"ref-for-collect-a-sequence-of-code-points\u2461"},{"id":"ref-for-collect-a-sequence-of-code-points\u2462"}],"title":"2. The Server-Timing Header Field"}],"url":"https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points"},
 "dc7feabb": {"dfnID":"dc7feabb","dfnText":"default toJSON steps","external":true,"refSections":[{"refs":[{"id":"ref-for-default-tojson-steps"}],"title":"3. The PerformanceServerTiming Interface"}],"url":"https://webidl.spec.whatwg.org/#default-tojson-steps"},
@@ -2280,6 +2280,7 @@ let refsData = {
 "#performanceservertiming-params": {"displayText":"params","export":true,"for_":["PerformanceServerTiming"],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"params","type":"dfn","url":"#performanceservertiming-params"},
 "#server-timing-header-field": {"displayText":"server-timing header field","export":true,"for_":[],"level":"","normative":true,"shortname":"server-timing","spec":"server-timing","status":"local","text":"server-timing header field","type":"dfn","url":"#server-timing-header-field"},
 "https://fetch.spec.whatwg.org/#collect-an-http-quoted-string": {"displayText":"collecting an HTTP quoted string","export":true,"for_":[],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"collecting an http quoted string","type":"dfn","url":"https://fetch.spec.whatwg.org/#collect-an-http-quoted-string"},
+"https://fetch.spec.whatwg.org/#fetch-timing-info": {"displayText":"timing info","export":true,"for_":[],"level":"","normative":true,"shortname":"fetch","spec":"fetch","status":"anchor-block","text":"timing info","type":"dfn","url":"https://fetch.spec.whatwg.org/#fetch-timing-info"},
 "https://fetch.spec.whatwg.org/#fetch-timing-info-server-timing-headers": {"displayText":"server-timing headers","export":true,"for_":["fetch timing info"],"level":"1","normative":true,"shortname":"fetch","spec":"fetch","status":"current","text":"server-timing headers","type":"dfn","url":"https://fetch.spec.whatwg.org/#fetch-timing-info-server-timing-headers"},
 "https://html.spec.whatwg.org/multipage/browsers.html#same-origin": {"displayText":"same origin","export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"same origin","type":"dfn","url":"https://html.spec.whatwg.org/multipage/browsers.html#same-origin"},
 "https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values": {"displayText":"rules for parsing floating-point number values","export":true,"for_":[],"level":"1","normative":true,"shortname":"html","spec":"html","status":"current","text":"rules for parsing floating-point number values","type":"dfn","url":"https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#rules-for-parsing-floating-point-number-values"},
@@ -2297,7 +2298,6 @@ let refsData = {
 "https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace": {"displayText":"strip leading and trailing ASCII whitespace","export":true,"for_":[],"level":"1","normative":true,"shortname":"infra","spec":"infra","status":"current","text":"strip leading and trailing ascii whitespace","type":"dfn","url":"https://infra.spec.whatwg.org/#strip-leading-and-trailing-ascii-whitespace"},
 "https://w3c.github.io/hr-time/#dfn-duration": {"displayText":"duration","export":true,"for_":[],"level":"3","normative":true,"shortname":"hr-time","spec":"hr-time-3","status":"current","text":"duration","type":"dfn","url":"https://w3c.github.io/hr-time/#dfn-duration"},
 "https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp": {"displayText":"DOMHighResTimeStamp","export":true,"for_":[],"level":"3","normative":true,"shortname":"hr-time","spec":"hr-time-3","status":"current","text":"DOMHighResTimeStamp","type":"typedef","url":"https://w3c.github.io/hr-time/#typedefdef-domhighrestimestamp"},
-"https://w3c.github.io/resource-timing/#dfn-timing-info": {"displayText":"timing info","export":true,"for_":[],"level":"","normative":true,"shortname":"resource-timing","spec":"resource-timing","status":"anchor-block","text":"timing info","type":"dfn","url":"https://w3c.github.io/resource-timing/#dfn-timing-info"},
 "https://w3c.github.io/resource-timing/#performanceresourcetiming": {"displayText":"PerformanceResourceTiming","export":true,"for_":[],"level":"1","normative":true,"shortname":"resource-timing","spec":"resource-timing","status":"current","text":"PerformanceResourceTiming","type":"interface","url":"https://w3c.github.io/resource-timing/#performanceresourcetiming"},
 "https://webidl.spec.whatwg.org/#Default": {"displayText":"Default","export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"Default","type":"extended-attribute","url":"https://webidl.spec.whatwg.org/#Default"},
 "https://webidl.spec.whatwg.org/#Exposed": {"displayText":"Exposed","export":true,"for_":[],"level":"1","normative":true,"shortname":"webidl","spec":"webidl","status":"current","text":"Exposed","type":"extended-attribute","url":"https://webidl.spec.whatwg.org/#Exposed"},
