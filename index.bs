@@ -49,7 +49,7 @@ urlPrefix: https://fetch.spec.whatwg.org/; spec: FETCH; type: dfn
 
 <h2 id="the-server-timing-header-field">The <code>Server-Timing</code> Header Field</h2>
 
-<p>The <dfn data-export>Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[!RFC5234]] syntax for the [=Server-Timing header field=] is as follows:</p>
+<p>The <dfn data-export oldids="dfn-server-timing-header-field">Server-Timing header field</dfn> is used to communicate one or more metrics and descriptions for the given request-response cycle. The ABNF (Augmented Backus-Naur Form) [[!RFC5234]] syntax for the [=Server-Timing header field=] is as follows:</p>
 
 <pre>
   Server-Timing             = #server-timing-metric
@@ -88,7 +88,7 @@ urlPrefix: https://fetch.spec.whatwg.org/; spec: FETCH; type: dfn
   </ul>
 </div>
 
-<p>To <dfn data-export>parse a server-timing header field</dfn> given a string |field|:</p>
+<p>To <dfn data-export oldids="dfn-parse-a-server-timing-header-field">parse a server-timing header field</dfn> given a string |field|:</p>
 
 <ol>
   <li><p>Let |position| be a [=string/position variable=], initially pointing at the start of |field|.</p></li>
@@ -148,7 +148,7 @@ urlPrefix: https://fetch.spec.whatwg.org/; spec: FETCH; type: dfn
   <li><p>Return |metric|.</p></li>
 </ol>
 
-<h2 id="the-performanceservertiming-interface">The {{PerformanceServerTiming}} Interface</h2>
+<h2 id="the-performanceservertiming-interface" oldids="dom-performanceservertiming,idl-def-performanceservertiming">The {{PerformanceServerTiming}} Interface</h2>
 
 <pre class='idl'>
 [Exposed=(Window,Worker)]
@@ -160,12 +160,12 @@ interface PerformanceServerTiming {
 };
 </pre>
 
-<p>When <dfn data-export data-dfn-for="PerformanceServerTiming">toJSON</dfn> is called, run [[!WEBIDL]]'s [=default toJSON steps=].</p>
+<p>When <dfn data-export data-dfn-for="PerformanceServerTiming" oldids="idl-def-performanceservertiming-tojson">toJSON</dfn> is called, run [[!WEBIDL]]'s [=default toJSON steps=].</p>
 
-<h3 id="the-name-attribute"><dfn attribute data-export data-dfn-for="PerformanceServerTiming">name</dfn> attribute</h3>
+<h3 id="the-name-attribute" oldids="name-attribute"><dfn attribute data-export data-dfn-for="PerformanceServerTiming" oldids="idl-def-performanceservertiming-name">name</dfn> attribute</h3>
 <p>The {{PerformanceServerTiming/name}} getter steps are to return [=this=]'s [=PerformanceServerTiming/metric name=].</p>
 
-<h3 id="the-duration-attribute"><dfn attribute data-export data-dfn-for="PerformanceServerTiming">duration</dfn> attribute</h3>
+<h3 id="the-duration-attribute" oldids="duration-attribute"><dfn attribute data-export data-dfn-for="PerformanceServerTiming" oldids="idl-def-performanceservertiming-duration">duration</dfn> attribute</h3>
 <p>The {{PerformanceServerTiming/duration}} getter steps are to do the following:</p>
 
 <ol>
@@ -182,28 +182,28 @@ interface PerformanceServerTiming {
   of time, and having it represent a <a spec="hr-time">duration</a> in milliseconds is a recommendation.
 </p>
 
-<h3 id="the-description-attribute"><dfn attribute data-export data-dfn-for="PerformanceServerTiming">description</dfn> attribute</h3>
+<h3 id="the-description-attribute" oldids="description-attribute"><dfn attribute data-export data-dfn-for="PerformanceServerTiming" oldids="idl-def-performanceservertiming-description">description</dfn> attribute</h3>
 <p>The {{PerformanceServerTiming/description}} getter steps are to return [=this=]'s [=PerformanceServerTiming/params=][<code>"desc"</code>] if it [=map/exists=], otherwise the empty string.</p>
 
-<p>A {{PerformanceServerTiming}} has an associated string <dfn data-dfn-for="PerformanceServerTiming">metric name</dfn>, initially set to the empty string.</p>
+<p>A {{PerformanceServerTiming}} has an associated string <dfn data-dfn-for="PerformanceServerTiming" oldids="dfn-metric-name">metric name</dfn>, initially set to the empty string.</p>
 
-<p>A {{PerformanceServerTiming}} has an associated [=ordered map=] <dfn data-dfn-for="PerformanceServerTiming">params</dfn>, initially empty.</p>
+<p>A {{PerformanceServerTiming}} has an associated [=ordered map=] <dfn data-dfn-for="PerformanceServerTiming" oldids="dfn-params">params</dfn>, initially empty.</p>
 
 <!-- TODO: How do extend and cross-reference the interface? -->
-<h3 id="extension-to-performanceresourcetiming">Extension to the {{PerformanceResourceTiming}} interface</h3>
+<h3 id="extension-to-performanceresourcetiming" oldids="extension-to-the-performanceresourcetiming-interface">Extension to the {{PerformanceResourceTiming}} interface</h3>
 
 <p>The {{PerformanceResourceTiming}} interface, which this specification partially extends, is defined in [[!RESOURCE-TIMING]].</p>
 
-<pre class='idl'>
+<pre class='idl' id=idl-def-performanceresourcetiming-partial-1>
 [Exposed=(Window,Worker)]
 partial interface PerformanceResourceTiming {
   readonly attribute FrozenArray&lt;PerformanceServerTiming&gt; serverTiming;
 };
 </pre>
 
-<h3 id="the-servertiming-attribute"><code>serverTiming</code> attribute</h3>
+<h3 id="the-servertiming-attribute" oldids="servertiming-attribute"><code>serverTiming</code> attribute</h3>
 
-<p>The <dfn attribute data-export data-dfn-for="PerformanceResourceTiming">serverTiming</dfn> getter steps are the following:</p>
+<p>The <dfn attribute data-export data-dfn-for="PerformanceResourceTiming" oldids="idl-def-performanceresourcetiming-servertiming">serverTiming</dfn> getter steps are the following:</p>
 
 <ol>
   <li><p>Let |entries| be a new [=list=].</p></li>
@@ -251,7 +251,7 @@ partial interface PerformanceResourceTiming {
   <h2 id="examples" class='informative'>Examples</h2>
   <em>This section is non-normative.</em>
 
-  <pre class="example" id="example-server-timing-headers">
+  <pre class="example" id="example-server-timing-headers" oldids="example-1">
     &gt; GET /resource HTTP/1.1
     &gt; Host: example.com
 
@@ -296,7 +296,7 @@ partial interface PerformanceResourceTiming {
 
   <p>The application can collect, process, and act on the provided metrics via the provided JavaScript interface:</p>
 
-  <pre class="example" id="example-javascript-api" highlight="js">
+  <pre class="example" id="example-javascript-api" highlight="js" oldids="example-2">
     // serverTiming entries can live on 'navigation' and 'resource' entries
     for (const entryType of ['navigation', 'resource']) {
       for (const {name: url, serverTiming} of performance.getEntriesByType(entryType)) {
@@ -340,3 +340,5 @@ partial interface PerformanceResourceTiming {
   <em>This section is non-normative.</em>
   <p>This document reuses text from the [[NAVIGATION-TIMING]], [[!RESOURCE-TIMING]], [[PERFORMANCE-TIMELINE-2]], and [[RFC6797]] specifications as permitted by the licenses of those specifications.</p>
 </section>
+<!-- Keeps ReSpec's #conformance anchor working; Bikeshed's Conformance section is #w3c-conformance. -->
+<div id=conformance></div>
