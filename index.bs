@@ -283,7 +283,7 @@ partial interface PerformanceResourceTiming {
     </tbody>
   </table>
 
-  <p><span class=allow-2119>The above header fields communicate six distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for <code>example.com/resource.jpg</code> fetch:</span></p>
+  <p><span class=allow-2119>The above header and trailer fields communicate seven distinct metrics that illustrate all the possible ways for the server to communicate data to the user agent: metric name only, metric with value, metric with value and description, and metric with description. For example, the above metrics may indicate that for the <code>example.com/resource</code> fetch:</span></p>
 
   <ol>
     <li>There was a cache miss.</li>
